@@ -1,0 +1,929 @@
+"""AI Agent Orchestrator - Automates Map, Generate Mission, Execute Test workflow."""
+import asyncio
+import json
+import logging
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Callable, Awaitable, Coroutine
+from dotenv import load_dotenv
+
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
+logger = logging.getLogger(__name__)
+
+
+class AgentOrchestrator:
+    """Orchestrates the automated QA workflow with intelligent decision making."""
+    
+    def __init__(self, update_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None):
+        """Initialize orchestrator with optional callback for real-time updates.
+        
+        Args:
+            update_callback: Async function to call with progress updates: {"step": "...", "status": "...", "message": "..."}
+        """
+        self.update_callback = update_callback
+        self.mapper_dir = Path(__file__).parent.parent.parent
+        
+        # Load environment
+        env_file = self.mapper_dir / ".env"
+        if env_file.exists():
+            load_dotenv(env_file)
+    
+    async def _send_update(self, step: str, status: str, message: str, data: Optional[Dict] = None):
+        """Send progress update via callback."""
+        if self.update_callback:
+            await self.update_callback({
+                "step": step,
+                "status": status,  # "running", "completed", "failed", "skipped"
+                "message": message,
+                "timestamp": datetime.now().isoformat(),
+                "data": data or {}
+            })
+    
+    def _fetch_pr_diff_direct(self, owner: str, repo: str, pr_number: str) -> Optional[Dict]:
+        """Fetch PR diff directly from GitHub API without requiring context_processor.
+        
+        Returns:
+            Dict with 'files' list containing diff data
+        """
+        if httpx is None:
+            logger.warning("httpx not available, cannot fetch PR diff")
+            return None
+            
+        try:
+            github_token = os.getenv("GITHUB_TOKEN")
+            
+            headers = {}
+            if github_token:
+                headers["Authorization"] = f"token {github_token}"
+            
+            url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/files"
+            
+            with httpx.Client(verify=True, timeout=30.0, headers=headers) as client:
+                response = client.get(url)
+                
+                if response.status_code == 404:
+                    logger.warning(f"PR not found (404). Is it public?")
+                    return None
+                
+                response.raise_for_status()
+                return {"files": response.json()}
+                
+        except Exception as e:
+            logger.warning(f"GitHub API error: {e}")
+            return None
+    
+    def _analyze_pr_diff_simple(self, pr_data: Dict) -> Dict[str, Any]:
+        """Simple PR diff analysis without LLM - extracts basic changes.
+        
+        Returns:
+            Dict with ui_changes, api_changes, file_types
+        """
+        files = pr_data.get("files", [])
+        ui_changes = []
+        api_changes = []
+        file_types = {}
+        
+        for file_info in files:
+            filename = file_info.get("filename", "")
+            patch = file_info.get("patch", "") or ""
+            status = file_info.get("status", "")
+            
+            # Track file types
+            ext = Path(filename).suffix
+            file_types[ext] = file_types.get(ext, 0) + 1
+            
+            # Check for UI changes
+            if ext in [".tsx", ".ts", ".jsx", ".js"]:
+                if "category" in patch.lower() or "dropdown" in patch.lower() or "select" in patch.lower():
+                    ui_changes.append(f"category dropdown/select added")
+                if "filter" in patch.lower():
+                    ui_changes.append(f"category filter added")
+                if "badge" in patch.lower():
+                    ui_changes.append(f"category badge added")
+            
+            # Check for API changes
+            if filename.endswith(".py") and ("main.py" in filename or "routes" in filename or "api" in filename):
+                if re.search(r'@app\.(get|post|put|patch|delete)\(', patch, re.IGNORECASE):
+                    # Extract endpoint
+                    match = re.search(r'@app\.(get|post|put|patch|delete)\(["\']([^"\']+)["\']', patch, re.IGNORECASE)
+                    if match:
+                        method = match.group(1).upper()
+                        path = match.group(2)
+                        api_changes.append(f"{method} {path}")
+        
+        return {
+            "ui_changes": list(set(ui_changes)),  # Deduplicate
+            "api_changes": list(set(api_changes)),
+            "file_types": file_types,
+            "files_changed": len(files)
+        }
+    
+    async def should_run_mapper(self, task_id: str, pr_link: Optional[str] = None) -> bool:
+        """Determine if semantic mapper needs to run based on PR changes.
+        
+        Checks:
+        1. If semantic_graph.json exists and is recent
+        2. If PR changes affect UI routes/components
+        3. If PR changes affect API endpoints
+        
+        Returns:
+            True if mapper should run, False if can skip
+        """
+        await self._send_update("analyze", "running", "🔍 Analyzing PR changes to determine if semantic mapping is needed...")
+        logger.info(f"Analyzing PR for task {task_id}, PR link: {pr_link}")
+        
+        semantic_graph_path = self.mapper_dir / "semantic_graph.json"
+        
+        # If no semantic graph exists, must run mapper
+        if not semantic_graph_path.exists():
+            await self._send_update("analyze", "completed", "✅ Analysis complete - No existing graph found")
+            await self._send_update("map", "running", "🗺️ Starting semantic mapper (no existing graph found)")
+            return True
+        
+        # If no PR link, run mapper to be safe
+        if not pr_link:
+            await self._send_update("analyze", "completed", "✅ Analysis complete - No PR link provided")
+            await self._send_update("map", "running", "🗺️ Starting semantic mapper (no PR link provided)")
+            return True
+        
+        # Check PR changes to see if UI/API changed
+        try:
+            # Try to fetch PR diff directly without importing context_processor
+            # (which requires langchain_core that may not be installed in backend)
+            pr_match = re.search(r'github\.com/([^/]+)/([^/]+)/pull/(\d+)', pr_link)
+            if pr_match:
+                owner, repo, pr_number = pr_match.groups()
+                pr_data = self._fetch_pr_diff_direct(owner, repo, pr_number)
+                
+                if pr_data:
+                    files = pr_data.get("files", [])
+                    
+                    # Check for specific UI changes that require remapping
+                    needs_remap = False
+                    remap_reasons = []
+                    
+                    for file_info in files:
+                        filename = file_info.get("filename", "")
+                        patch = file_info.get("patch", "") or ""
+                        
+                        # Check for new routes (React Router, Next.js, etc.)
+                        if any(ext in filename for ext in [".tsx", ".tsx", ".jsx", ".js"]):
+                            # Check for new route definitions
+                            if re.search(r'path\s*[:=]\s*["\']([^"\']+)["\']', patch, re.IGNORECASE):
+                                needs_remap = True
+                                remap_reasons.append("New route detected")
+                            
+                            # Check for new Link components or navigation
+                            if re.search(r'<Link\s+to\s*=\s*["\']([^"\']+)["\']', patch, re.IGNORECASE) or \
+                               re.search(r'navigate\s*\(["\']([^"\']+)["\']', patch, re.IGNORECASE) or \
+                               re.search(r'useNavigate|useRouter|Router', patch, re.IGNORECASE):
+                                needs_remap = True
+                                remap_reasons.append("New navigation/link detected")
+                            
+                            # Check for new buttons that might open forms/modals
+                            if re.search(r'<button[^>]*onClick', patch, re.IGNORECASE) and \
+                               ('form' in patch.lower() or 'modal' in patch.lower() or 'dialog' in patch.lower()):
+                                needs_remap = True
+                                remap_reasons.append("New interactive button detected")
+                            
+                            # Check for new form components (only if it's a new form, not adding fields to existing)
+                            # Skip if it's just adding a field (like <select> or <input> to existing form)
+                            if file_info.get("status") == "added" and \
+                               (re.search(r'<form[^>]*>', patch, re.IGNORECASE) or \
+                                re.search(r'export\s+(default\s+)?function\s+\w+Form', patch, re.IGNORECASE)):
+                                needs_remap = True
+                                remap_reasons.append("New form component detected")
+                            
+                            # Check for new pages/components (file additions)
+                            if file_info.get("status") == "added" and \
+                               any(ext in filename for ext in [".tsx", ".tsx", ".jsx"]):
+                                # Only remap if it's a page component, not just a utility component
+                                if "page" in filename.lower() or "route" in filename.lower() or \
+                                   re.search(r'export\s+(default\s+)?function\s+\w+Page', patch, re.IGNORECASE):
+                                    needs_remap = True
+                                    remap_reasons.append("New page component added")
+                    
+                    if needs_remap:
+                        reasons_str = ", ".join(set(remap_reasons))
+                        await self._send_update("analyze", "completed", 
+                            f"✅ Analysis complete - UI structural changes detected: {reasons_str}")
+                        await self._send_update("map", "running", 
+                            f"🗺️ Starting semantic mapper - UI structural changes detected: {reasons_str}")
+                        return True
+                
+                # Analyze PR diff for simple changes (without LLM)
+                pr_summary = self._analyze_pr_diff_simple(pr_data)
+            else:
+                # If we can't fetch PR diff, skip mapper (assume no structural changes)
+                await self._send_update("analyze", "completed", 
+                    "✅ Analysis complete - Could not fetch PR diff, assuming no structural changes")
+                await self._send_update("map", "skipped", 
+                    "⏭️ Skipped semantic mapper - Could not fetch PR diff, assuming no structural changes")
+                return False
+            
+            # Check if UI files changed (less specific)
+            ui_changes = pr_summary.get("ui_changes", [])
+            file_types = pr_summary.get("file_types", {})
+            
+            # Check UI changes - if they're only field-level, skip mapping
+            # Field-level keywords that don't require remapping
+            field_keywords = ["dropdown", "select", "input", "field", "category", "badge", "filter", "form field", "badge"]
+            # Structural keywords that DO require remapping
+            structural_ui_keywords = ["route", "link", "page", "navigation", "component", "button"]
+            
+            # Check if ALL ui_changes are field-level (no structural changes)
+            all_field_changes = all(
+                any(field_kw in change.lower() for field_kw in field_keywords) or
+                not any(struct_kw in change.lower() for struct_kw in structural_ui_keywords)
+                for change in ui_changes
+            )
+            
+            # If we have UI changes but they're all field-level, skip mapping
+            if ui_changes and all_field_changes:
+                await self._send_update("analyze", "completed", 
+                    f"✅ Analysis complete - Only field/data changes detected ({len(ui_changes)} changes: {', '.join(ui_changes[:3])})")
+                await self._send_update("map", "skipped", 
+                    f"⏭️ Skipped semantic mapper - Only field/data changes detected ({len(ui_changes)} changes: {', '.join(ui_changes[:3])}), no layout/routing updates needed")
+                return False
+            
+            # If we have structural UI changes, remap
+            if ui_changes and not all_field_changes:
+                structural_list = [c for c in ui_changes if any(struct_kw in c.lower() for struct_kw in structural_ui_keywords) and not any(field_kw in c.lower() for field_kw in field_keywords)]
+                await self._send_update("analyze", "completed", 
+                    f"✅ Analysis complete - Structural UI changes detected ({len(structural_list)} changes: {', '.join(structural_list[:2])})")
+                await self._send_update("map", "running", 
+                    f"🗺️ Starting semantic mapper - Structural UI changes detected ({len(structural_list)} changes: {', '.join(structural_list[:2])})")
+                return True
+            
+            # If frontend files changed but no UI changes detected, check file status
+            frontend_extensions = [".tsx", ".ts", ".jsx", ".js", ".vue", ".html"]
+            frontend_changed = any(
+                any(ext in str(f) for ext in frontend_extensions)
+                for f in pr_summary.get("sample_files", [])
+            )
+            
+            # Only remap if new files were added (structural change)
+            # Modifications to existing files (like adding a field) don't need remapping
+            if frontend_changed:
+                # If we can't determine file status, be conservative and skip
+                # (Better to skip than waste time remapping when not needed)
+                await self._send_update("analyze", "completed", 
+                    "✅ Analysis complete - Frontend files changed but no structural changes detected")
+                await self._send_update("map", "skipped", 
+                    "⏭️ Skipped semantic mapper - Frontend files changed but no structural changes (routes/links/pages) detected")
+                return False
+            
+            # Check if API routes changed - only remap if NEW endpoints added, not modifications to existing ones
+            api_changes = pr_summary.get("api_changes", [])
+            if api_changes and pr_data:
+                # Check PR diff to see if these are new endpoints or just modifications
+                files = pr_data.get("files", [])
+                # Check if any new route decorators were added (new endpoints)
+                new_endpoints = False
+                for file_info in files:
+                    filename = file_info.get("filename", "")
+                    patch = file_info.get("patch", "") or ""
+                    status = file_info.get("status", "")
+                    
+                    # Only check backend files
+                    if "main.py" in filename or "routes" in filename or "api" in filename or filename.endswith(".py"):
+                        # Check for new route decorators (added lines with @app.post, @app.get, etc.)
+                        if status == "added" and re.search(r'@app\.(get|post|put|patch|delete)\(', patch, re.IGNORECASE):
+                            new_endpoints = True
+                            break
+                        # Check for new route definitions in added lines
+                        if status == "added" and re.search(r'@(get|post|put|patch|delete)\(["\']([^"\']+)["\']', patch, re.IGNORECASE):
+                            new_endpoints = True
+                            break
+                
+                if new_endpoints:
+                    await self._send_update("analyze", "completed",
+                        f"✅ Analysis complete - New API endpoints detected ({len(api_changes)} changes)")
+                    await self._send_update("map", "running",
+                        f"🗺️ Starting semantic mapper - New API endpoints detected ({len(api_changes)} changes)")
+                    return True
+                else:
+                    # Only modifications to existing endpoints, skip mapping
+                    await self._send_update("analyze", "completed",
+                        f"✅ Analysis complete - API endpoints modified but no new endpoints added")
+                    await self._send_update("map", "skipped",
+                        f"⏭️ Skipped semantic mapper - API endpoints modified but no new endpoints added ({len(api_changes)} changes)")
+                    # Don't return False here - continue to check other conditions
+            elif api_changes:
+                # Can't analyze PR, be conservative but log the reason
+                await self._send_update("analyze", "completed",
+                    f"✅ Analysis complete - API changes detected but couldn't verify if new endpoints")
+                await self._send_update("map", "running",
+                    f"🗺️ Starting semantic mapper - API changes detected but couldn't verify if new endpoints ({len(api_changes)} changes)")
+                return True
+            
+            # Check graph age - if older than 7 days, remap
+            graph_age = (datetime.now() - datetime.fromtimestamp(semantic_graph_path.stat().st_mtime)).days
+            if graph_age > 7:
+                await self._send_update("analyze", "completed", 
+                    f"✅ Analysis complete - Semantic graph is {graph_age} days old, remapping recommended")
+                await self._send_update("map", "running", 
+                    f"🗺️ Starting semantic mapper - Semantic graph is {graph_age} days old, remapping recommended")
+                return True
+            
+            await self._send_update("analyze", "completed", 
+                "✅ Analysis complete - No UI/API structural changes detected")
+            await self._send_update("map", "skipped", 
+                "⏭️ Skipped semantic mapper - No UI/API structural changes detected")
+            return False
+            
+        except Exception as e:
+            logger.warning(f"Error analyzing PR for mapper decision: {e}")
+            await self._send_update("analyze", "completed", 
+                f"⚠️ Analysis complete - Error occurred ({str(e)[:50]}), running mapper to be safe")
+            await self._send_update("map", "running", 
+                f"🗺️ Starting semantic mapper - Error analyzing PR ({str(e)[:50]}), running to be safe")
+            return True
+    
+    async def run_semantic_mapper(self, task_id: str) -> Dict[str, Any]:
+        """Run semantic mapper and return result."""
+        # Update already sent in should_run_mapper, but send completion message
+        pass
+        
+        try:
+            script_path = self.mapper_dir / "semantic_mapper.py"
+            
+            process = await asyncio.create_subprocess_exec(
+                "uv", "run", "python", str(script_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(self.mapper_dir)
+            )
+            
+            stdout, _ = await process.communicate()
+            output = stdout.decode() if stdout else ""
+            
+            # Check if semantic graph was created
+            semantic_graph_path = self.mapper_dir / "semantic_graph.json"
+            if semantic_graph_path.exists():
+                try:
+                    graph_data = json.loads(semantic_graph_path.read_text())
+                    node_count = len(graph_data.get("nodes", []))
+                    edge_count = len(graph_data.get("edges", []))
+                    await self._send_update("map", "completed", 
+                        f"Semantic mapping completed: {node_count} nodes, {edge_count} edges")
+                    return {
+                        "success": process.returncode == 0,
+                        "output": output,
+                        "nodes": node_count,
+                        "edges": edge_count
+                    }
+                except Exception as e:
+                    logger.warning(f"Could not parse semantic graph: {e}")
+            
+            if process.returncode == 0:
+                await self._send_update("map", "completed", "Semantic mapping completed")
+            else:
+                await self._send_update("map", "failed", f"Semantic mapping failed: {output[:200]}")
+            
+            return {
+                "success": process.returncode == 0,
+                "output": output
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            await self._send_update("map", "failed", f"Semantic mapping error: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg
+            }
+    
+    async def run_context_processor(self, task_id: str, task_file_path: Path) -> Dict[str, Any]:
+        """Run context processor to generate mission.json."""
+        await self._send_update("generate-mission", "running", 
+            f"📝 Starting mission generation for {task_id}...")
+        
+        try:
+            script_path = self.mapper_dir / "context_processor.py"
+            
+            process = await asyncio.create_subprocess_exec(
+                "uv", "run", "python", str(script_path), str(task_file_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(self.mapper_dir)
+            )
+            
+            stdout, _ = await process.communicate()
+            output = stdout.decode() if stdout else ""
+            
+            # Check if mission.json was created
+            mission_file = self.mapper_dir / "temp" / f"{task_id}_mission.json"
+            if mission_file.exists():
+                try:
+                    mission_data = json.loads(mission_file.read_text())
+                    action_count = len(mission_data.get("actions", []))
+                    verification = mission_data.get("verification_points", {})
+                    await self._send_update("generate-mission", "completed",
+                        f"✅ Mission generation completed for {task_id}: {action_count} action(s) defined")
+                    return {
+                        "success": True,
+                        "output": output,
+                        "mission_file": str(mission_file.relative_to(self.mapper_dir)),
+                        "mission": mission_data
+                    }
+                except Exception as e:
+                    logger.warning(f"Could not parse mission JSON: {e}")
+            
+            if process.returncode == 0:
+                await self._send_update("generate-mission", "completed", f"✅ Mission generation completed for {task_id}")
+            else:
+                await self._send_update("generate-mission", "failed", 
+                    f"❌ Mission generation failed: {output[:200]}")
+            
+            return {
+                "success": process.returncode == 0,
+                "output": output,
+                "mission_file": str(mission_file.relative_to(self.mapper_dir)) if mission_file.exists() else None
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            await self._send_update("generate-mission", "failed", f"Mission generation error: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg
+            }
+    
+    async def run_executor(self, task_id: str, mission_file_path: Path) -> Dict[str, Any]:
+        """Run executor to execute tests."""
+        # Load mission to extract test cases
+        test_cases = []
+        try:
+            mission_data = json.loads(mission_file_path.read_text())
+            
+            # Extract test cases from mission
+            test_cases_list = mission_data.get("test_cases", [])
+            if test_cases_list:
+                for test_case in test_cases_list:
+                    purpose = test_case.get("purpose", "")
+                    verification = test_case.get("verification", {})
+                    
+                    # Add purpose as main test case
+                    if purpose:
+                        test_cases.append(f"📋 {purpose}")
+                    
+                if test_cases:
+                    # Just show the test count, not all details to reduce clutter
+                    await self._send_update("execute", "running",
+                        f"▶️ Starting test execution for {task_id} ({len(test_cases)} test cases)")
+                else:
+                    await self._send_update("execute", "running",
+                        f"▶️ Starting test execution for {task_id} with triple-check verification...")
+            else:
+                # Fallback: Generate test cases from actions and verification_points (legacy approach)
+                verification = mission_data.get("verification_points", {})
+                actions = mission_data.get("actions", [])
+                intent = mission_data.get("intent", {})
+                changes = intent.get("changes", [])
+                
+                # Get primary entity for context
+                primary_entity = intent.get("primary_entity", "").lower()
+                
+                # Extract only fields that are mentioned in changes (new/changed fields)
+                # Get all possible field names from expected_values
+                expected_field_names = set(verification.get("expected_values", {}).keys())
+                changed_fields = set()
+                
+                import re
+                for change in changes:
+                    change_lower = change.lower()
+                    
+                    # Pattern 1: "added `category` column" or "added category column"
+                    field_matches = re.findall(r'`?(\w+)`?\s+(?:column|field|dropdown|select|badge|filter)', change_lower)
+                    for match in field_matches:
+                        # Verify this field actually exists in expected_values
+                        if any(match.lower() == field.lower() for field in expected_field_names):
+                            changed_fields.add(match.lower())
+                    
+                    # Pattern 2: "added category" or "updated category" - extract field name after action verb
+                    action_pattern = r'(?:added|updated|modified)\s+`?(\w+)`?'
+                    action_matches = re.findall(action_pattern, change_lower)
+                    for match in action_matches:
+                        if any(match.lower() == field.lower() for field in expected_field_names):
+                            changed_fields.add(match.lower())
+                    
+                    # Pattern 3: Direct field mentions in changes
+                    for field_name in expected_field_names:
+                        field_lower = field_name.lower()
+                        # Check if this field is explicitly mentioned in the change
+                        if (
+                            field_lower in change_lower and
+                            # Make sure it's not part of another word (e.g., "category" not "categories")
+                            re.search(r'\b' + re.escape(field_lower) + r'\b', change_lower)
+                        ):
+                            changed_fields.add(field_lower)
+                
+                logger.info(f"Changed fields detected from PR/task: {changed_fields}")
+                
+                # UI Test Cases - Only for changed fields
+                if actions:
+                    for action in actions:
+                        component_role = action.get("component_role", "")
+                        field_selectors = action.get("field_selectors", {})
+                        
+                        # Only include fields that are in changed_fields (exact match or word boundary)
+                        relevant_fields = {
+                            name: info for name, info in field_selectors.items()
+                            if any(
+                                changed_field == name.lower() or 
+                                re.search(r'\b' + re.escape(changed_field) + r'\b', name.lower())
+                                for changed_field in changed_fields
+                            )
+                        }
+                        
+                        for field_name, field_info in relevant_fields.items():
+                            # User-friendly description for changed fields
+                            if field_info.get("tag") == "select":
+                                test_cases.append(f"UI: Verify {field_name} dropdown exists and can select a value")
+                            elif field_info.get("tag") == "input":
+                                test_cases.append(f"UI: Verify {field_name} field exists and can enter a value")
+                            elif field_info.get("tag") == "textarea":
+                                test_cases.append(f"UI: Verify {field_name} text area exists and can enter text")
+                            else:
+                                test_cases.append(f"UI: Verify {field_name} field exists and is functional")
+                        
+                        # Add form submission test only if there are relevant fields
+                        if relevant_fields and ("form" in component_role.lower() or "button" in component_role.lower()):
+                            fields_list = ", ".join(relevant_fields.keys())
+                            test_cases.append(f"UI: Submit form with {primary_entity} including {fields_list} field(s)")
+                
+                # API Test Cases - Only for changed fields
+                api_endpoint = verification.get("api_endpoint", "")
+                if api_endpoint:
+                    expected_values = verification.get("expected_values", {})
+                    # Only include fields that are in changed_fields (exact match)
+                    changed_fields_in_api = [
+                        field for field in expected_values.keys()
+                        if any(changed_field == field.lower() for changed_field in changed_fields)
+                    ]
+                    
+                    if changed_fields_in_api:
+                        fields_str = ", ".join(changed_fields_in_api)
+                        test_cases.append(f"API: Verify {api_endpoint} accepts and processes {fields_str} field(s)")
+                        test_cases.append(f"API: Verify {api_endpoint} returns {fields_str} in response")
+                
+                # DB Test Cases - Only for changed fields
+                db_table = verification.get("db_table", "")
+                if db_table:
+                    expected_values = verification.get("expected_values", {})
+                    # Only include columns that are in changed_fields (exact match)
+                    changed_columns = [
+                        field for field in expected_values.keys()
+                        if any(changed_field == field.lower() for changed_field in changed_fields)
+                    ]
+                    
+                    if changed_columns:
+                        columns_str = ", ".join(changed_columns)
+                        test_cases.append(f"DB: Verify {columns_str} column(s) exist in {db_table} table")
+                        test_cases.append(f"DB: Verify {columns_str} column(s) can store values correctly")
+                
+                if test_cases:
+                    test_cases_str = "\n  • " + "\n  • ".join(test_cases)
+                    await self._send_update("execute", "running", 
+                        f"▶️ Starting test execution for {task_id}\n\nTest cases to run:{test_cases_str}")
+                else:
+                    await self._send_update("execute", "running", 
+                        f"▶️ Starting test execution for {task_id} with triple-check verification...")
+        except Exception as e:
+            logger.warning(f"Could not extract test cases: {e}")
+            await self._send_update("execute", "running", 
+                f"▶️ Starting test execution for {task_id} with triple-check verification...")
+        
+        try:
+            script_path = self.mapper_dir / "executor.py"
+            
+            # Prepare environment without VIRTUAL_ENV to avoid uv warnings
+            import os
+            env = os.environ.copy()
+            env.pop("VIRTUAL_ENV", None)
+            
+            process = await asyncio.create_subprocess_exec(
+                "uv", "run", "python", str(script_path), str(mission_file_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(self.mapper_dir),
+                env=env
+            )
+            
+            # Stream output line by line so UI gets real-time updates
+            output_lines = []
+            last_update_time = asyncio.get_event_loop().time()
+            
+            while True:
+                line = await process.stdout.readline()
+                if not line:
+                    break
+                
+                decoded_line = line.decode().rstrip()
+                output_lines.append(decoded_line)
+                logger.info(f"[executor] {decoded_line}")
+                
+                # Send periodic updates to UI (every 5 seconds or on very important lines only)
+                current_time = asyncio.get_event_loop().time()
+                is_important = any(marker in decoded_line for marker in [
+                    '❌', 'Test completed', 'OVERALL', 'TRIPLE-CHECK',
+                    'Database Verification', 'API Verification', 'UI Verification',
+                    'EXECUTION SUMMARY', 'FAILED', 'PASSED'
+                ])
+
+                if is_important or (current_time - last_update_time > 5.0):
+                    # Send last few lines as progress update (avoid sending the same content repeatedly)
+                    recent_lines = output_lines[-3:]
+                    progress_msg = "\n".join(recent_lines)
+                    # Only send if it's different from the last sent message
+                    if progress_msg != getattr(self, '_last_progress_msg', None):
+                        await self._send_update("execute", "running", progress_msg)
+                        self._last_progress_msg = progress_msg
+                    last_update_time = current_time
+            
+            await process.wait()
+            output = "\n".join(output_lines)
+            
+            # Check for report file
+            report_file = self.mapper_dir / "temp" / f"{mission_file_path.stem}_report.json"
+            
+            result = {
+                "success": process.returncode == 0,
+                "output": output,
+                "report_file": str(report_file.relative_to(self.mapper_dir)) if report_file.exists() else None
+            }
+            
+            # If executor failed, extract and show the actual error
+            if process.returncode != 0:
+                # Try to extract the actual error from output
+                error_lines = output.split('\n') if output else []
+                error_msg = output
+                
+                # Look for error patterns in the output
+                error_start_idx = None
+                for i, line in enumerate(error_lines):
+                    # Look for common error indicators
+                    if any(keyword in line for keyword in ['Traceback', 'Error:', 'Exception:', '❌', 'FAIL', 'failed']):
+                        error_start_idx = i
+                        break
+                
+                if error_start_idx is not None:
+                    # Extract error from that point onwards
+                    error_section = '\n'.join(error_lines[error_start_idx:])
+                    # Also include last 20 lines before error for context
+                    context_start = max(0, error_start_idx - 20)
+                    error_msg = '\n'.join(error_lines[context_start:])
+                else:
+                    # Fallback: show last 1000 chars (more likely to contain the error)
+                    error_msg = output[-1000:] if len(output) > 1000 else output
+                
+                # Limit error message but show key parts
+                if len(error_msg) > 2000:
+                    error_msg = error_msg[:1000] + "\n... (truncated) ...\n" + error_msg[-1000:]
+                
+                await self._send_update("execute", "failed",
+                    f"❌ Test execution failed:\n{error_msg}")
+                result["error"] = output
+                return result
+            
+            if report_file.exists():
+                try:
+                    report_data = json.loads(report_file.read_text())
+                    triple_check = report_data.get("triple_check", {})
+                    db_success = triple_check.get("database", {}).get("success", False)
+                    api_success = triple_check.get("api", {}).get("success", False)
+                    ui_success = triple_check.get("ui", {}).get("success", False)
+                    overall_success = report_data.get("overall_success", False)
+                    
+                    # Count passed/failed checks
+                    passed = sum([db_success, api_success, ui_success])
+                    failed = 3 - passed
+                    
+                    # Build scenario-level results message
+                    scenario_results = report_data.get("scenario_results", {})
+                    scenario_summary_lines = []
+                    
+                    if scenario_results:
+                        # Load mission to get scenario details
+                        mission_data = json.loads(mission_file_path.read_text())
+                        test_cases = mission_data.get("test_cases", [])
+                        
+                        # Create a map of scenario_id to scenario details
+                        scenario_map = {s.get("id"): s for s in test_cases}
+                        
+                        for scenario_id, scenario_result in scenario_results.items():
+                            # Handle error scenarios (browser_agent_error, critical_error, etc.)
+                            if scenario_id in ["browser_agent_error", "critical_error"]:
+                                error_msg = scenario_result.get("error", "Unknown error")
+                                scenario_summary_lines.append(f"❌ {scenario_id.replace('_', ' ').title()}: {error_msg}")
+                                # Show traceback if available (truncated)
+                                traceback = scenario_result.get("traceback", "")
+                                if traceback:
+                                    traceback_lines = traceback.split('\n')
+                                    # Show last 5 lines of traceback
+                                    if len(traceback_lines) > 5:
+                                        traceback_preview = '\n'.join(traceback_lines[-5:])
+                                    else:
+                                        traceback_preview = traceback
+                                    scenario_summary_lines.append(f"    Error details: {traceback_preview}")
+                                continue
+                            
+                            scenario_info = scenario_map.get(scenario_id, {})
+                            purpose = scenario_result.get("purpose") or scenario_info.get("purpose", "")
+                            verification = scenario_result.get("verification", {})
+                            
+                            # Handle scenarios with errors
+                            if scenario_result.get("error"):
+                                error_msg = scenario_result.get("error", "Unknown error")
+                                scenario_summary_lines.append(f"❌ {purpose or scenario_id}: {error_msg}")
+                                continue
+                            
+                            if not purpose:
+                                continue
+                            
+                            # Determine overall scenario success
+                            scenario_success = scenario_result.get("success", False)
+                            ui_checked = verification.get("ui", {}).get("checked", False)
+                            api_checked = verification.get("api", {}).get("checked", False)
+                            db_checked = verification.get("db", {}).get("checked", False)
+                            
+                            ui_success_scenario = verification.get("ui", {}).get("success", False) if ui_checked else None
+                            api_success_scenario = verification.get("api", {}).get("success", False) if api_checked else None
+                            db_success_scenario = verification.get("db", {}).get("success", False) if db_checked else None
+                            
+                            # Scenario passes if action succeeded and all checked verifications passed
+                            scenario_passed = scenario_success
+                            if ui_checked:
+                                scenario_passed = scenario_passed and ui_success_scenario
+                            if api_checked:
+                                scenario_passed = scenario_passed and api_success_scenario
+                            if db_checked:
+                                scenario_passed = scenario_passed and db_success_scenario
+                            
+                            status_icon = "✅" if scenario_passed else "❌"
+                            scenario_summary_lines.append(f"{status_icon} {purpose}")
+                            
+                            # Add verification point details
+                            if ui_checked:
+                                ui_status = "✅" if ui_success_scenario else "❌"
+                                ui_desc = scenario_info.get("verification", {}).get("ui", "")
+                                if ui_desc:
+                                    scenario_summary_lines.append(f"    {ui_status} UI: {ui_desc}")
+                            
+                            if api_checked:
+                                api_status = "✅" if api_success_scenario else "❌"
+                                api_desc = scenario_info.get("verification", {}).get("api", "")
+                                if api_desc:
+                                    scenario_summary_lines.append(f"    {api_status} API: {api_desc}")
+                            
+                            if db_checked:
+                                db_status = "✅" if db_success_scenario else "❌"
+                                db_desc = scenario_info.get("verification", {}).get("db", "")
+                                if db_desc:
+                                    scenario_summary_lines.append(f"    {db_status} DB: {db_desc}")
+                    
+                    # Build final message
+                    if scenario_summary_lines:
+                        summary_text = "\n".join(scenario_summary_lines)
+                        if overall_success:
+                            await self._send_update("execute", "completed",
+                                f"✅ All tests passed! ({passed}/3 checks passed)\n\nTest Results:\n{summary_text}")
+                        else:
+                            await self._send_update("execute", "failed",
+                                f"❌ Tests failed: {failed} check(s) failed, {passed} passed\n\nTest Results:\n{summary_text}")
+                    else:
+                        # Fallback to simple message if no scenario results
+                        if overall_success:
+                            await self._send_update("execute", "completed",
+                                f"✅ All tests passed! ({passed}/3 checks passed)")
+                        else:
+                            await self._send_update("execute", "failed",
+                                f"❌ Tests failed: {failed} check(s) failed, {passed} passed")
+                    
+                    result["report"] = report_data
+                    result["triple_check"] = {
+                        "database": db_success,
+                        "api": api_success,
+                        "ui": ui_success,
+                        "overall": overall_success
+                    }
+                    result["scenario_results"] = scenario_results
+                except Exception as e:
+                    logger.warning(f"Could not parse report JSON: {e}")
+            
+            if process.returncode == 0:
+                if not result.get("triple_check", {}).get("overall", False):
+                    await self._send_update("execute", "failed", "Tests completed but some checks failed")
+            else:
+                # Show more detailed error output
+                error_lines = output.split('\n') if output else []
+                # Find the actual error (usually after the warning)
+                error_msg = output
+                for i, line in enumerate(error_lines):
+                    if 'Traceback' in line or 'Error' in line or 'Exception' in line:
+                        # Show from this line onwards
+                        error_msg = '\n'.join(error_lines[i:])
+                        break
+                
+                # Limit error message length but show key parts
+                if len(error_msg) > 1000:
+                    error_msg = error_msg[:500] + "\n... (truncated) ...\n" + error_msg[-500:]
+                
+                await self._send_update("execute", "failed", f"Test execution failed:\n{error_msg}")
+            
+            return result
+            
+        except Exception as e:
+            error_msg = str(e)
+            await self._send_update("execute", "failed", f"Test execution error: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg
+            }
+    
+    async def run_full_workflow(self, task_id: str, task_file_path: Path, 
+                                pr_link: Optional[str] = None) -> Dict[str, Any]:
+        """Run the complete automated workflow: Map → Generate Mission → Execute.
+        
+        Returns:
+            Dict with results from each step and overall status
+        """
+        await self._send_update("workflow", "running", f"🚀 Starting automated workflow for {task_id}...")
+        
+        results = {
+            "task_id": task_id,
+            "steps": {},
+            "overall_success": False
+        }
+        
+        try:
+            # Step 1: Check if mapper needs to run
+            should_map = await self.should_run_mapper(task_id, pr_link)
+            
+            if should_map:
+                # Step 2: Run semantic mapper
+                map_result = await self.run_semantic_mapper(task_id)
+                results["steps"]["map"] = map_result
+                
+                if not map_result.get("success"):
+                    await self._send_update("workflow", "failed", 
+                        "Workflow stopped: Semantic mapping failed")
+                    results["overall_success"] = False
+                    return results
+            else:
+                await self._send_update("map", "skipped", 
+                    "Skipping semantic mapping (no UI/API changes detected)")
+                results["steps"]["map"] = {"success": True, "skipped": True}
+            
+            # Step 3: Generate mission
+            mission_result = await self.run_context_processor(task_id, task_file_path)
+            results["steps"]["generate-mission"] = mission_result
+            
+            if not mission_result.get("success"):
+                await self._send_update("workflow", "failed", 
+                    "Workflow stopped: Mission generation failed")
+                results["overall_success"] = False
+                return results
+            
+            # Step 4: Execute tests
+            mission_file = self.mapper_dir / mission_result.get("mission_file", 
+                f"temp/{task_id}_mission.json")
+            
+            if mission_file.exists():
+                execute_result = await self.run_executor(task_id, mission_file)
+                results["steps"]["execute"] = execute_result
+                results["overall_success"] = execute_result.get("success", False) and \
+                    execute_result.get("triple_check", {}).get("overall", False)
+            else:
+                await self._send_update("execute", "failed", 
+                    f"Mission file not found: {mission_file}")
+                results["steps"]["execute"] = {
+                    "success": False,
+                    "error": "Mission file not found"
+                }
+                results["overall_success"] = False
+            
+            # Final status
+            if results["overall_success"]:
+                await self._send_update("workflow", "completed", 
+                    "✅ Workflow completed successfully! All tests passed.")
+            else:
+                await self._send_update("workflow", "failed", 
+                    "❌ Workflow completed but some tests failed. Check details above.")
+            
+            return results
+            
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Workflow error: {e}", exc_info=True)
+            await self._send_update("workflow", "failed", f"Workflow error: {error_msg}")
+            results["overall_success"] = False
+            results["error"] = error_msg
+            return results

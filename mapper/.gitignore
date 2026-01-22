@@ -1,0 +1,14 @@
+# Temporary generated files
+temp/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/

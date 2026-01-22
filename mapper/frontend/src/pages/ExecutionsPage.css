@@ -1,0 +1,162 @@
+.executions-page {
+  min-height: calc(100vh - 60px);
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.loading,
+.error,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.executions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.execution-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.execution-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.execution-header:hover {
+  background: #f5f5f5;
+}
+
+.execution-main-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex: 1;
+}
+
+.execution-task-link {
+  color: #646cff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.execution-task-link:hover {
+  text-decoration: underline;
+}
+
+.execution-type {
+  background: #f0f0f0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.execution-status {
+  font-weight: 600;
+}
+
+.execution-time-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+  margin-right: 1rem;
+}
+
+.execution-time {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+.expand-icon {
+  color: #999;
+  font-size: 0.75rem;
+}
+
+.execution-details {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  background: #f9f9f9;
+}
+
+.execution-error {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+}
+
+.execution-result {
+  margin-top: 1rem;
+}
+
+.execution-result pre {
+  background: #2a2a2a;
+  color: #fff;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .executions-page {
+    background-color: #1a1a1a;
+  }
+
+  .execution-card {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+
+  .execution-header:hover {
+    background: #333;
+  }
+
+  .execution-type {
+    background: #333;
+  }
+
+  .execution-details {
+    background: #222;
+    border-top-color: #333;
+  }
+
+  .execution-result pre {
+    background: #1a1a1a;
+  }
+}

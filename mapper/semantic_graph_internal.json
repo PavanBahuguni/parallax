@@ -1,0 +1,90 @@
+{
+  "nodes": [
+    {
+      "id": "order_management_dashboard",
+      "url": "http://localhost:5173",
+      "semantic_name": "order_management_dashboard",
+      "title": "Vite + React + TS",
+      "display_header": "Order Management Dashboard",
+      "primary_entity": "Localhost:5173",
+      "components": [],
+      "active_apis": [],
+      "context": {
+        "persona": "internal"
+      }
+    },
+    {
+      "id": "order_management_dashboard",
+      "url": "http://localhost:5173/",
+      "semantic_name": "order_management_dashboard",
+      "title": "Vite + React + TS",
+      "display_header": "Order Management Dashboard",
+      "primary_entity": null,
+      "components": [],
+      "active_apis": [],
+      "context": {
+        "persona": "internal"
+      }
+    },
+    {
+      "id": "shopping_cart",
+      "url": "http://localhost:5173/cart",
+      "semantic_name": "shopping_cart",
+      "title": "Vite + React + TS",
+      "display_header": "Shopping Cart",
+      "primary_entity": "Cart",
+      "components": [],
+      "active_apis": [],
+      "context": {
+        "persona": "internal"
+      }
+    },
+    {
+      "id": "settings_page",
+      "url": "http://localhost:5173/settings",
+      "semantic_name": "settings_page",
+      "title": "Vite + React + TS",
+      "display_header": "Settings",
+      "primary_entity": "Setting",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_export_data",
+          "selector": "button[data-testid='export-data-btn']",
+          "text": "Export Data",
+          "stable_text": "Export Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear_cache",
+          "selector": "button[data-testid='clear-cache-btn']",
+          "text": "Clear Cache",
+          "stable_text": "Clear Cache",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_reset_settings",
+          "selector": "button[data-testid='reset-settings-btn']",
+          "text": "Reset Settings",
+          "stable_text": "Reset Settings",
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "internal"
+      }
+    }
+  ],
+  "edges": [],
+  "api_endpoints": {},
+  "db_tables": {},
+  "entrypoints": {
+    "internal": "order_management_dashboard"
+  }
+}

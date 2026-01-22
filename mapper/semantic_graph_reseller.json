@@ -1,0 +1,221 @@
+{
+  "nodes": [
+    {
+      "id": "partner_home",
+      "url": "http://localhost:9000/welcome",
+      "semantic_name": "partner_home",
+      "title": "Partner Central",
+      "display_header": "Partner Central",
+      "description": "The page is the landing screen for Nutanix Partner Central, presenting a welcome banner, a brief description of the portal as the central hub for resources and tools that help partners grow their business, and a call\u2011to\u2011action for users who do not yet have a My Nutanix account. Its primary purpose is to introduce partners to the platform, guide them toward account creation, and provide basic navigation to the site\u2019s content while also displaying standard footer links such as privacy and copyright information. Key visible sections include the main header, the welcome message with a sign\u2011up prompt, and a footer containing legal and privacy controls.",
+      "primary_entity": "Welcome",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_log_in_with_my_nutanix",
+          "selector": "button.ntnx",
+          "text": "Log In With My Nutanix",
+          "stable_text": "Log In With My Nutanix",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_1",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button:nth-of-type(4)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_4",
+          "selector": "button:nth-of-type(5)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button:nth-of-type(14)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    }
+  ],
+  "edges": [],
+  "api_endpoints": {},
+  "db_tables": {},
+  "entrypoints": {
+    "reseller": "partner_home"
+  }
+}

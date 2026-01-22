@@ -1,0 +1,138 @@
+.dashboard-page {
+  min-height: calc(100vh - 60px);
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.loading,
+.error,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.tasks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.task-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.task-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #213547;
+  flex: 1;
+}
+
+.task-id {
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.task-description {
+  color: #666;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.task-pr-link {
+  color: #646cff;
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.task-path {
+  font-family: monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard-page {
+    background-color: #1a1a1a;
+  }
+
+  .task-card {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+
+  .task-header h2 {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .task-id {
+    background: #333;
+    color: #999;
+  }
+
+  .task-description {
+    color: #999;
+  }
+
+  .task-footer {
+    border-top-color: #333;
+  }
+}

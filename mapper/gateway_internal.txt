@@ -1,0 +1,4 @@
+1. Login using env(TEST_USER) and env(TEST_PASS).
+2. After login, ensure we are viewing as internal/admin user.
+3. Verify we have access to all internal features and dashboards.
+4. Ensure the main admin dashboard loads properly.

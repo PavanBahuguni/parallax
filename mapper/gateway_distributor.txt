@@ -1,0 +1,6 @@
+1. Login using env(TEST_USER) and env(TEST_PASS).
+2. After login, open the "View as" control.
+3. Select "Distributor".
+4. Search for partner account "Global Distributors Inc" and select it.
+5. Search for user "distributor_user_1" and select it.
+6. Ensure the dashboard loads and confirms we are viewing as distributor.

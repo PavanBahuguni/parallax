@@ -1,0 +1,2723 @@
+{
+  "nodes": [
+    {
+      "id": "partner_hub",
+      "url": "http://localhost:9000/",
+      "semantic_name": "partner_hub",
+      "title": "Partner Central",
+      "display_header": "Partner Central Hub",
+      "description": "Here's a summary of the page:\n\n**1. What this page shows/displays**: This page displays an overview of the Partner Central hub, showcasing key updates, promotions, and insights related to the Elevate Partner Program.\n\n**2. Its main purpose or functionality**: The primary purpose of this page is to serve as a central information hub for resellers like myself (logged in as persona='reseller') to catch up on latest news, promotions, and initiatives that impact my business.\n\n**3. Key sections or features visible**: The page has several key sections and features, including:\n\t* Prominent header sections highlighting program updates and promotions.\n\t* A section dedicated to showcasing the value proposition of the Elevate Partner Program.\n\t* Links or call-outs to specific programs, promotions, or events (e.g., migration promotion).\n\t* Possibly a footer section with additional resources or quick links.",
+      "headers": [
+        "Unveiling the FY26 Elevate Partner Program",
+        "Driving the Hybrid Revolution",
+        "Save BIG on .NEXT 2026",
+        "New for FY26: Broadcom to Nutanix Migration Promotion",
+        "Recognized by Gartner. Ready to Build.",
+        "A New Force in Containers",
+        "Explore Updated Deal Registration Resources",
+        ".NEXT 2025: That\u2019s a Wrap",
+        "Your Guide to Driving Successful Renewals",
+        "Elevate Incentives Estimator",
+        "A Simpler Path to Enterprise AI",
+        "\u00a9 Nutanix 2026",
+        "Partner Central",
+        "View As"
+      ],
+      "primary_entity": null,
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_announcements",
+          "selector": "button#tab-item-id-prefix-48-1",
+          "text": "Announcements",
+          "stable_text": "Announcements",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.carousel-navigation-button",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_all_news_and_updates",
+          "selector": "button.ntnx",
+          "text": "View All News And Updates",
+          "stable_text": "View All News And Updates",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.carousel-navigation-button",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_6",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_7",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_22",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_23",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_25",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_27",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_28",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_30",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_32",
+          "selector": "button:nth-of-type(33)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_39",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_41",
+          "selector": "button:nth-of-type(42)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "filter_options",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "filter_options_list",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    },
+    {
+      "id": "sales_resources_page",
+      "url": "http://localhost:9000/sales",
+      "semantic_name": "sales_resources_page",
+      "title": "Partner Central",
+      "display_header": "Sales Resources Page",
+      "description": "Here is a 3-point description of the page:\n\n1. **What this page shows/displays**: This page displays an overview of sales resources and enablement tools for partners to grow their Nutanix business, including a brief summary of the sales stages and associated metrics.\n\n2. **Its main purpose or functionality**: The primary function of this page is to provide a centralized access point for partners to utilize various resources that aid in selling Nutanix products, making it easier to track progress and close deals.\n\n3. **Key sections or features visible**: The key content area highlights the importance of sales stages, while the headers (e.g., \"Content Library\", \"Sales Resources\") provide a clear indication of the types of information and tools available on this page.",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Content Library",
+        "Sales Resources",
+        "Test Drive Partner Center",
+        "Partner Central",
+        "View As",
+        "Sales Summary",
+        "Sales Stage Summary",
+        "Promos And Incentives",
+        "Individual Incentives",
+        "Company Incentives",
+        "Customer Promotions",
+        "Additional Resources",
+        "Sales Tools & Resources",
+        "Prospect Qualification Guide",
+        "Nutanix 101",
+        "Find a Distributor",
+        "Channel-Led Selling",
+        "Technical Tools & Resources",
+        "X-Ray SaaS",
+        "Collector SaaS",
+        "Demos",
+        "Solution Architecture",
+        "Nutanix Bible",
+        "Service Delivery Kits",
+        "Products And Solutions Resources",
+        "Nutanix vs VMware",
+        "Nutanix Cloud Infrastructure (NCI)",
+        "Nutanix Cloud Manager (NCM)",
+        "End User Computing (EUC)",
+        "Nutanix Cloud Clusters (NC2)",
+        "Nutanix Unified Storage (NUS)",
+        "Nutanix Database Services (NDB)",
+        "Nutanix Enterprise AI (NAI)",
+        "Nutanix Kubernetes Platform (NKP)",
+        "Technology Alliance And OEM Solutions",
+        "AWS",
+        "Dell",
+        "Cisco",
+        "Citrix",
+        "Fujitsu",
+        "HPE",
+        "Lenovo",
+        "Cohesity",
+        "Deal Registration",
+        "Performance + Deal Registration",
+        "Deal Registration System - User Guide"
+      ],
+      "primary_entity": "Sale",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_12",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_14",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_browse",
+          "selector": "button.SecondaryPageLayout---browseButton---Fltm5",
+          "text": "Browse",
+          "stable_text": "Browse",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_sales_data",
+          "selector": "button.ntnx",
+          "text": "Sales Data",
+          "stable_text": "Sales Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button:nth-of-type(27)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "filter_options_list",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "\"filter_options\"",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    },
+    {
+      "id": "renewals_resources_page",
+      "url": "http://localhost:9000/renewals",
+      "semantic_name": "renewals_resources_page",
+      "title": "Partner Central",
+      "display_header": "Renewal Resources",
+      "description": "Here is a 3-point description of the page:\n\n1. **What this page shows/displays**: This page displays an overview of enablement and sales resources available to partners, including a summary of Nutanix's sales stages and associated probabilities and forecast categories.\n\n2. **Its main purpose or functionality**: The primary purpose of this page is to provide access to a library of resources for partners to grow and close their Nutanix business, with the goal of helping them sell more effectively.\n\n3. **Key sections or features visible**: The page appears to be structured around providing information and links to resources, with sections likely including an introduction or overview, resource lists or libraries, and possibly a navigation menu to access other areas of the platform (e.g., View As).",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Content Library",
+        "Renewals Resources",
+        "Partner Central",
+        "View As",
+        "Renewals Summary",
+        "Renewals Stage Summary",
+        "Renewals Tools & Resources",
+        "Renewals Playbook",
+        "Renewals Insights FAQ",
+        "Tool Overview",
+        "Renewal Insights Partner Admin User Guide"
+      ],
+      "primary_entity": "Renewal",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_12",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_14",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_browse",
+          "selector": "button.SecondaryPageLayout---browseButton---Fltm5",
+          "text": "Browse",
+          "stable_text": "Browse",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_renewals_data",
+          "selector": "button.ntnx",
+          "text": "Renewals Data",
+          "stable_text": "Renewals Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button:nth-of-type(27)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "options_filter",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "category_filter",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    },
+    {
+      "id": "partner_resources_page",
+      "url": "http://localhost:9000/learn",
+      "semantic_name": "partner_resources_page",
+      "title": "Partner Central",
+      "display_header": "Partner Resources",
+      "description": "Here is a 2-3 sentence description for each point:\n\n**1. What this page shows/displays**\nThis page displays an overview of Nutanix's enablement and sales resources for partners, including training and certification programs. It showcases the types of tools and content available to support partner success. The page highlights various areas of focus, such as cloud infrastructure and hyperconverged solutions.\n\n**2. Its main purpose or functionality**\nThe primary function of this page is to inform and guide resellers on how to access and utilize Nutanix's enablement resources. It aims to provide a centralized platform for partners to find relevant training, certifications, and other support materials. The page helps partners navigate and engage with Nutanix's offerings.\n\n**3. Key sections or features visible**\nThe key sections or features of this page include:\n* A content library that likely contains various resources, such as documentation, videos, and webinars.\n* Links to training and certification programs that enable partners to develop their skills and expertise.\n* A section for staying up-to-date with Nutanix's latest news, announcements, and updates.",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Content Library",
+        "Learn",
+        "Partner Central",
+        "View As",
+        "Elevate Certifications",
+        "Sales Certifications",
+        "Required",
+        "Technical Certifications",
+        "Required",
+        "Recommended",
+        "* Counts of these certifications will be updated soon.",
+        "News and Updates",
+        "News and Updates",
+        "Newsletters",
+        "Sales Training",
+        "Sales Welcome Kit",
+        "Nutanix Certified Sales Representative (NCSR): Nutanix Basics",
+        "Nutanix Accredited Associate - Infrastructure (NAAI)",
+        "Nutanix Certified Sales Expert (NCSX)",
+        "Renewals",
+        "Technical Pre-Sales Training",
+        "SE Partner Welcome Kit",
+        "Nutanix Accredited Professional - Infrastructure (NAPI)",
+        "Technical Post-Sales Training",
+        "Nutanix Certified Associate (NCA) Certification",
+        "Nutanix Certified Professional (NCP-MCI) Certifications",
+        "Service Training",
+        "Nutanix Certified Services (NCS)",
+        "Nutanix Certified Services (NCS) Certification Program",
+        "Other Enablement Resources",
+        "On-Demand Webinars",
+        "Partner Perspective",
+        "Nutanix Knowledge Base"
+      ],
+      "primary_entity": "Learn",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_12",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_14",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_browse",
+          "selector": "button.SecondaryPageLayout---browseButton---Fltm5",
+          "text": "Browse",
+          "stable_text": "Browse",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_all_certifications",
+          "selector": "button.ntnx",
+          "text": "View All Certifications",
+          "stable_text": "View All Certifications",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button:nth-of-type(27)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "filtered_options",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "filter_options_list",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    },
+    {
+      "id": "partner_resources",
+      "url": "http://localhost:9000/marketing",
+      "semantic_name": "partner_resources",
+      "title": "Partner Central",
+      "display_header": "Partner Resource Hub",
+      "description": "Here is a 3-part response summarizing what this page represents:\n\n**1. What this page shows/displays:** This page displays an overview of marketing resources and tools for Nutanix partners, providing access to enablement and sales materials.\n\n**2. Its main purpose or functionality:** The primary function of this page appears to be a central hub for Nutanix partners to access various marketing tools and resources, facilitating their ability to build demand strategies and engage with customers.\n\n**3. Key sections or features visible:** The page includes prominent sections highlighting key content areas, such as \"Content Library\", \"Supercharge Your Marketing\", and a call-to-action to \"Test Drive Partner Center\", indicating that partners can access various marketing tools and resources through this central location.",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Content Library",
+        "Supercharge Your Marketing",
+        "Test Drive Partner Center",
+        "Partner Central",
+        "View As",
+        "Marketing Data",
+        "Demand Activation",
+        "Demand Activation Guides",
+        "Data Protection/Privacy FAQ",
+        "Prospect Qualification Guide",
+        "Browse Collateral",
+        "Demand Center Activities",
+        "Campaigns",
+        "Test Drive Partner Center",
+        "Agency Marketplace",
+        "Social Syndication",
+        "Business Development Funds",
+        "Partner Funds Center",
+        "Manage Historical BDF Requests",
+        "Program Guide",
+        "Brand Guidelines",
+        "Brand Guidelines"
+      ],
+      "primary_entity": "Marketing",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_12",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_14",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_browse",
+          "selector": "button.SecondaryPageLayout---browseButton---Fltm5",
+          "text": "Browse",
+          "stable_text": "Browse",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_marketing_data",
+          "selector": "button.ntnx",
+          "text": "Marketing Data",
+          "stable_text": "Marketing Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button:nth-of-type(27)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "\"filter_options\"",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "\"filter_options\"",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    },
+    {
+      "id": "partner_program_overview",
+      "url": "http://localhost:9000/programs",
+      "semantic_name": "partner_program_overview",
+      "title": "Partner Central",
+      "display_header": "Partner Programs Overview",
+      "description": "Based on the provided information, here are 3-sentence descriptions for each part:\n\n**1. What this page shows/displays**\n\nThis page displays a high-level overview of the Nutanix Elevate Partner program, showcasing its various components and features. The page appears to be an information hub, providing a centralized location for partners to access resources and learn about program requirements. It showcases a mix of promotional content, educational materials, and links to additional information.\n\n**2. Its main purpose or functionality**\n\nThe primary purpose of this page is to inform and educate resellers (like the logged-in persona) about the Nutanix Elevate Partner program, its benefits, and resources available to them. It likely serves as a starting point for partners to access enablement materials, learn about program requirements, and maximize their rewards.\n\n**3. Key sections or features visible**\n\nThe page's structure includes prominent section headers that highlight key aspects of the Elevate Partner program, such as \"Content Library\", \"Elevate Distributor Program\", and \"Partner Central\". There are also calls-to-action encouraging partners to learn more about program benefits and resources, implying a focus on user engagement and resource discovery.",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Content Library",
+        "Elevate Partner Program",
+        "Elevate Distributor Program",
+        "Partner Central",
+        "View As",
+        "Program Guide",
+        "Program Status",
+        "Channel-Led Selling",
+        "Nutanix Price Books",
+        "Learn Frontline",
+        "Operations Portal",
+        "Operations Portal Video",
+        "Software @ Scale",
+        "Quick Overview",
+        "Elevate Reseller Program",
+        "Program Guide",
+        "Program Status",
+        "Services Portal",
+        "Quick Overview"
+      ],
+      "primary_entity": "Program",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_tools",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Tools",
+          "stable_text": "Tools",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_3",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q2",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q2",
+          "stable_text": "Nutanix FY26 Q2",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_10",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_11",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_12",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_13",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_14",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_16",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_17",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.up-down-icon-wrapper",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_browse",
+          "selector": "button.SecondaryPageLayout---browseButton---Fltm5",
+          "text": "Browse",
+          "stable_text": "Browse",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_reseller_data",
+          "selector": "button.ntnx",
+          "text": "Reseller Data",
+          "stable_text": "Reseller Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_24",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_26",
+          "selector": "button:nth-of-type(27)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_back_button",
+          "selector": "button.ot-link-btn",
+          "text": "Back Button",
+          "stable_text": "Back Button",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_icon",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Icon",
+          "stable_text": "Filter Icon",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_confirm_my_choices",
+          "selector": "button.save-preference-btn-handler",
+          "text": "Confirm My Choices",
+          "stable_text": "Confirm My Choices",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "\"category_filter_options\"",
+          "selector": "ul:nth-of-type(1)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "category_filter",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "reseller"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "partner_hub",
+      "to": "sales_resources_page",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Sales')"
+    },
+    {
+      "from": "renewals_resources_page",
+      "to": "partner_resources_page",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Learn')"
+    },
+    {
+      "from": "renewals_resources_page",
+      "to": "partner_resources",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Marketing')"
+    },
+    {
+      "from": "partner_hub",
+      "to": "renewals_resources_page",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Renewals')"
+    },
+    {
+      "from": "partner_hub",
+      "to": "partner_program_overview",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Programs')"
+    },
+    {
+      "from": "partner_hub",
+      "to": "partner_resources_page",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Learn')"
+    },
+    {
+      "from": "partner_hub",
+      "to": "partner_resources",
+      "action": "navigate",
+      "selector": "[role='link']:has-text('Marketing')"
+    }
+  ],
+  "api_endpoints": {},
+  "db_tables": {},
+  "entrypoints": {
+    "reseller": "partner_hub"
+  }
+}

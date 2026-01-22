@@ -1,0 +1,124 @@
+.workflow-progress {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.workflow-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.workflow-progress-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.connection-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.connection-status.connected {
+  background: #d4edda;
+  color: #155724;
+}
+
+.connection-status.disconnected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.workflow-progress-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+  font-style: italic;
+}
+
+.workflow-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workflow-update {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px;
+  border-left: 4px solid #ccc;
+}
+
+.workflow-update.status-running {
+  border-left-color: #007bff;
+  background: #e7f3ff;
+}
+
+.workflow-update.status-completed {
+  border-left-color: #28a745;
+  background: #d4edda;
+}
+
+.workflow-update.status-failed {
+  border-left-color: #dc3545;
+  background: #f8d7da;
+}
+
+.workflow-update.status-skipped {
+  border-left-color: #ffc107;
+  background: #fff3cd;
+}
+
+.update-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.update-icon {
+  font-size: 18px;
+}
+
+.update-step {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.update-status {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #666;
+  font-weight: 500;
+}
+
+.update-message {
+  color: #555;
+  font-size: 14px;
+  margin-left: 26px;
+}
+
+.update-data {
+  margin-top: 8px;
+  margin-left: 26px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.update-data pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

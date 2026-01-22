@@ -1,0 +1,35 @@
+{
+  "ticket_id": "TICKET-UNKNOWN",
+  "target_node": "items_manager",
+  "target_url": "http://localhost:5173",
+  "navigation_steps": [
+    "http://localhost:5173"
+  ],
+  "actions": [
+    {
+      "component_role": "create_item_form",
+      "component_selector": "form:nth-of-type(1)",
+      "test_data": {
+        "Item name": "AI Test Item",
+        "Item description": "Testing automated QA"
+      }
+    }
+  ],
+  "verification_points": {
+    "api_endpoint": "POST /items",
+    "db_table": "items",
+    "expected_values": {
+      "item_name": "AI Test Item",
+      "item_description": "Testing automated QA"
+    }
+  },
+  "intent": {
+    "primary_entity": "Item",
+    "changes": [
+      "added new item creation form with name and description fields",
+      "added Add Item button to submit the form"
+    ],
+    "test_focus": "verify that the new item creation form accepts name and description inputs, submits correctly via the Add Item button, displays the newly created item in the items list, and persists the item in the database"
+  },
+  "pr_link": "https://github.com/example/repo/pull/123"
+}
