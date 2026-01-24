@@ -431,7 +431,7 @@ def build_gateway_compile_prompt(
     instructions: str,
     snapshot: Dict[str, Any],
     base_url: str,
-    storage_state_path: str,
+    storage_state_path: Optional[str] = None,
 ) -> str:
     """
     IMPORTANT: This is where we 'add this to prompt':
@@ -467,7 +467,8 @@ CRITICAL RULES - READ THIS FIRST:
 1. **ONLY FOLLOW THE INSTRUCTIONS PROVIDED** - Do NOT add steps that are not in the instructions.
 2. **DO NOT add cookie consent clicks, privacy dialogs, or any other steps not explicitly mentioned.**
 3. **The page snapshot is ONLY for finding selectors** - Use it to locate elements mentioned in instructions, but do NOT add steps based on what you see in the snapshot.
-4. **Follow instructions in order** - Convert each numbered instruction into exactly one step (or wait/assert step).
+4. **MUST CONVERT EVERY NUMBERED STEP** - If instructions have 10 numbered steps, you MUST create 10 steps in the plan. Do NOT skip any steps. Count the numbered steps in the instructions and ensure your plan has the same number of steps.
+5. **Follow instructions in order** - Convert each numbered instruction into exactly one step (or wait/assert step). The last step in instructions must be the last step in your plan.
 
 CONTEXT:
 - Target app base URL: {base_url}
@@ -485,6 +486,15 @@ SELECTOR PRIORITY (for buttons/links mentioned in instructions):
 2. **If snapshot shows aria-label** for the element, use: `[aria-label='...']`
 3. **If snapshot shows id**, use: `#id`
 4. **If snapshot shows data-testid**, use: `[data-testid='...']`
+
+EXACT TEXT MATCHING (CRITICAL):
+- **If instructions say "exactly" or "exact match"** (e.g., "click on div exactly having CDW"), you MUST use exact text matching
+- For exact matches in dropdowns/popups, use: `container-selector div:has-text('EXACT_TEXT')` BUT add `"exact_match": true` to the step
+- Example: If instructions say "click on div exactly having CDW" and there are options like "CDW US", "CDW Canada", use:
+  ```json
+  {{"action": "click", "selector": ".view-as-partner-popup div:has-text('CDW')", "exact_match": true}}
+  ```
+- The `exact_match: true` flag ensures only elements with text content exactly equal to 'CDW' (not 'CDW US' or 'CDW Canada') are selected
 
 IMPORTANT: When instructions mention button text in natural language (e.g., "Click on 'X' button"), prefer text-based selectors over aria-label/id unless the snapshot clearly shows a better selector.
 
@@ -519,16 +529,17 @@ PATTERN MATCHING GUIDE:
 - IMPORTANT: When instructions mention BOTH a page name AND a URL pattern in parentheses, the URL pattern takes priority - use assert_url_contains.
 {credential_instruction}
 {postcondition_instruction}
-- MUST include final step save_storage_state with path "{storage_state_path}".
+{f"- Optionally include final step save_storage_state with path \"{storage_state_path}\" (for reference only, not required)." if storage_state_path else "- Do NOT include save_storage_state step (using gateway plan instead of storage state)."}
 
 JSON format:
 {{
   "persona": "{persona}",
   "goal": "short goal describing what the gateway accomplishes",
-  "storage_state_path": "{storage_state_path}",
+  {f'"storage_state_path": "{storage_state_path}",' if storage_state_path else ''}
   "steps": [
     {{ "action": "goto", "url": "{base_url}" }},
     {{ "action": "click", "selector": "..." }},
+    {{ "action": "click", "selector": "...", "exact_match": true }},
     {{ "action": "fill", "selector": "...", "value": "..." }}
   ],
   "postconditions": [
@@ -536,14 +547,18 @@ JSON format:
   ]
 }}
 
+Note: Use "exact_match": true for click actions when instructions say "exactly" or "exact match" to ensure precise text matching in dropdowns/popups.
+
 Note: "postconditions" array is optional. Only include it if the instructions mention verification steps.
 
 REMINDER: 
 - Convert ONLY the steps mentioned in USER INSTRUCTIONS below.
+- **CRITICAL: Count the numbered steps in the instructions. Your plan MUST have the same number of steps.**
+- **If instructions have step 10, your plan MUST include step 10. Do NOT stop at step 9.**
 - Do NOT add cookie consent, privacy dialogs, or any other steps.
 - Use the PAGE SNAPSHOT only to find selectors for elements mentioned in instructions.
 
-USER INSTRUCTIONS (follow these EXACTLY, in order):
+USER INSTRUCTIONS (follow these EXACTLY, in order - convert EVERY numbered step):
 {instructions}
 
 PAGE SNAPSHOT (JSON) - Use this ONLY to find selectors for elements mentioned in instructions:
@@ -672,54 +687,342 @@ async def execute_gateway_plan(page: Page, plan: Dict[str, Any]) -> None:
                 selector = step["selector"]
                 print(f": {selector}")
                 
+                # Check if this is an exact text match request
+                exact_match = step.get("exact_match", False)
+                clicked_exact = False
+                
                 # Try to click with the provided selector
                 try:
-                    # IMPROVEMENT: Try case-insensitive text matching first (faster than agentic fallback)
-                    # If selector uses text='...', try case-insensitive alternatives first
-                    clicked = False
-                    if "text=" in selector:
-                        text_match = re.search(r"text=['\"]([^'\"]+)['\"]", selector)
+                    # Handle exact text matching for dropdowns/popups
+                    if exact_match and ":has-text(" in selector:
+                        # Extract the text to match exactly and the container selector
+                        text_match = re.search(r":has-text\(['\"]([^'\"]+)['\"]\)", selector)
                         if text_match:
-                            original_text = text_match.group(1)
-                            # Try case-insensitive alternatives before failing
-                            # :has-text() is more flexible and often case-insensitive
-                            case_insensitive_selectors = [
-                                f":has-text('{original_text}')",  # Most flexible, often case-insensitive
-                                f"text='{original_text.lower()}'",  # Lowercase version
-                                f"text='{original_text.capitalize()}'",  # Capitalized version
-                                selector,  # Original as last resort
-                            ]
-                            for alt_selector in case_insensitive_selectors:
-                                try:
-                                    # For login/submit buttons, wait for them to be enabled first
-                                    selector_lower = alt_selector.lower()
-                                    if any(keyword in selector_lower for keyword in ["login", "log in", "submit", "sign in"]):
-                                        try:
-                                            await page.wait_for_selector(f"{alt_selector}:not([disabled])", state="visible", timeout=5000)
-                                            print(f"      ✅ Button is enabled and ready")
-                                        except:
-                                            pass  # Continue to click attempt
-                                    
-                                    await page.click(alt_selector, timeout=3000)
-                                    print(f"      ✅ Clicked with case-insensitive selector: {alt_selector}")
-                                    selector = alt_selector  # Update selector for logging
-                                    clicked = True
+                            exact_text = text_match.group(1)
+                            # Extract container selector (the main container, not intermediate elements)
+                            # For ".view-as-partner-popup div:has-text('CDW')", we want ".view-as-partner-popup"
+                            # For ".popup-class:has-text('text')", we want ".popup-class"
+                            before_has_text = selector.split(":has-text")[0].strip()
+                            
+                            # If there's a space, take just the first part (the container class)
+                            # e.g., ".view-as-partner-popup div" -> ".view-as-partner-popup"
+                            if " " in before_has_text:
+                                container_selector = before_has_text.split()[0]
+                            else:
+                                container_selector = before_has_text
+                            
+                            if not container_selector:
+                                container_selector = ".view-as-partner-popup"  # Default fallback
+                            
+                            print(f"      🔍 Using container: '{container_selector}' to find exact text: '{exact_text}'")
+                            
+                            # Wait for dropdown to populate with options containing the search text
+                            # This is critical because typing in an input triggers async filtering
+                            print(f"      ⏳ Waiting for dropdown to populate with '{exact_text}' options...")
+                            max_wait_seconds = 5
+                            wait_interval = 0.3
+                            waited = 0
+                            found_options = False
+                            
+                            while waited < max_wait_seconds:
+                                check_js = f"""
+                                () => {{
+                                    const spans = Array.from(document.querySelectorAll('span'));
+                                    for (const span of spans) {{
+                                        const text = (span.innerText || span.textContent || '').trim();
+                                        const rect = span.getBoundingClientRect();
+                                        if (text.toLowerCase().includes('{exact_text}'.toLowerCase()) && rect.width > 0 && rect.height > 0) {{
+                                            return true;
+                                        }}
+                                    }}
+                                    return false;
+                                }}
+                                """
+                                found_options = await page.evaluate(check_js)
+                                if found_options:
+                                    print(f"      ✅ Dropdown populated after {waited:.1f}s")
                                     break
-                                except:
-                                    continue
-                    
-                    if not clicked:
-                        # Not a text selector or case-insensitive alternatives failed, use original
-                        # For login/submit buttons, wait for them to be enabled first
-                        selector_lower = selector.lower()
-                        if any(keyword in selector_lower for keyword in ["login", "log in", "submit", "sign in"]):
+                                await asyncio.sleep(wait_interval)
+                                waited += wait_interval
+                            
+                            if not found_options:
+                                print(f"      ⚠️  Dropdown didn't populate within {max_wait_seconds}s, proceeding anyway...")
+                            
+                            # Find element with exact text content (not containing additional text)
+                            # IMPORTANT: We need strict exact matching to avoid "CDW Canada" matching "CDW"
+                            # Strategy: Look for span elements first (where labels typically are), then other elements
+                            # Only match if the element's text is EXACTLY the target, with no additional text
+                            exact_selector_js = f"""
+                            () => {{
+                                const container = document.querySelector('{container_selector}') || document;
+                                const exactText = '{exact_text}';
+                                const candidates = [];
+                                
+                                // First, try to find span elements (labels are often in spans)
+                                const spans = Array.from(container.querySelectorAll('span'));
+                                for (const span of spans) {{
+                                    const text = (span.innerText || span.textContent || '').trim();
+                                    if (text === exactText) {{
+                                        const rect = span.getBoundingClientRect();
+                                        const isVisible = rect.width > 0 && rect.height > 0 && 
+                                                         window.getComputedStyle(span).display !== 'none' &&
+                                                         window.getComputedStyle(span).visibility !== 'hidden';
+                                        if (isVisible) {{
+                                            candidates.push({{element: span, text: text, priority: 1}});
+                                        }}
+                                    }}
+                                }}
+                                
+                                // If no span found, check other elements, but be more careful
+                                if (candidates.length === 0) {{
+                                    const elements = Array.from(container.querySelectorAll('div, li, option, a, button'));
+                                    for (const el of elements) {{
+                                        const fullText = (el.innerText || el.textContent || '').trim();
+                                        
+                                        // STRICT EXACT MATCH: text must be exactly equal
+                                        if (fullText === exactText) {{
+                                            // Check if this element directly contains the text (not via children)
+                                            // Count direct text nodes
+                                            let directText = '';
+                                            let hasChildElements = false;
+                                            for (const child of el.childNodes) {{
+                                                if (child.nodeType === 3) {{ // Text node
+                                                    directText += child.textContent;
+                                                }} else if (child.nodeType === 1) {{ // Element node
+                                                    hasChildElements = true;
+                                                }}
+                                            }}
+                                            directText = directText.trim();
+                                            
+                                            // If element has child elements AND the direct text doesn't match,
+                                            // it means the text comes from children, so skip this parent
+                                            if (hasChildElements && directText !== exactText) {{
+                                                continue;
+                                            }}
+                                            
+                                            const rect = el.getBoundingClientRect();
+                                            const isVisible = rect.width > 0 && rect.height > 0 && 
+                                                             window.getComputedStyle(el).display !== 'none' &&
+                                                             window.getComputedStyle(el).visibility !== 'hidden';
+                                            if (isVisible) {{
+                                                candidates.push({{element: el, text: fullText, priority: 2}});
+                                            }}
+                                        }}
+                                    }}
+                                }}
+                                
+                                // Return first candidate (spans have priority 1, others have priority 2)
+                                if (candidates.length > 0) {{
+                                    // Sort by priority (lower is better)
+                                    candidates.sort((a, b) => a.priority - b.priority);
+                                    return candidates[0].element;
+                                }}
+                                
+                                return null;
+                            }}
+                            """
                             try:
-                                await page.wait_for_selector(f"{selector}:not([disabled])", state="visible", timeout=10000)
-                                print(f"      ✅ Button is enabled and ready")
-                            except:
-                                print(f"      ⚠️  Button might be disabled, attempting click anyway")
-                        
-                        await page.click(selector, timeout=int(step.get("timeout_ms", 15000)))
+                                # Check if container exists and get DETAILED debug info
+                                debug_js = f"""
+                                () => {{
+                                    const exactText = '{exact_text}';
+                                    const primarySelector = '{container_selector}';
+                                    
+                                    // Try to find the container
+                                    const containerEl = document.querySelector(primarySelector);
+                                    
+                                    // Also check common dropdown selectors
+                                    const dropdownEl = document.querySelector('.ntnx-select-dropdown') || 
+                                                       document.querySelector('[role="listbox"]');
+                                    
+                                    const container = containerEl || dropdownEl || document;
+                                    const containerExists = !!containerEl;
+                                    const dropdownExists = !!dropdownEl;
+                                    
+                                    // Get ALL spans in the document that contain the search text
+                                    const allSpans = Array.from(document.querySelectorAll('span'));
+                                    const matchingSpans = [];
+                                    const exactSpans = [];
+                                    
+                                    for (const span of allSpans) {{
+                                        const text = (span.innerText || span.textContent || '').trim();
+                                        const rect = span.getBoundingClientRect();
+                                        const isVisible = rect.width > 0 && rect.height > 0;
+                                        
+                                        if (text.toLowerCase().includes(exactText.toLowerCase())) {{
+                                            matchingSpans.push({{
+                                                text: text,
+                                                visible: isVisible,
+                                                width: rect.width,
+                                                height: rect.height
+                                            }});
+                                            
+                                            if (text === exactText) {{
+                                                exactSpans.push({{
+                                                    text: text,
+                                                    visible: isVisible,
+                                                    width: rect.width,
+                                                    height: rect.height,
+                                                    parent: span.parentElement?.className || 'unknown'
+                                                }});
+                                            }}
+                                        }}
+                                    }}
+                                    
+                                    return {{ 
+                                        primaryContainerExists: containerExists,
+                                        dropdownExists: dropdownExists,
+                                        containerSelector: primarySelector,
+                                        totalSpansInDoc: allSpans.length,
+                                        matchingSpans: matchingSpans.slice(0, 20),
+                                        exactSpans: exactSpans
+                                    }};
+                                }}
+                                """
+                                debug_info = await page.evaluate(debug_js)
+                                if debug_info:
+                                    print(f"      🔍 Container '{debug_info.get('containerSelector')}' exists: {debug_info.get('primaryContainerExists')}")
+                                    print(f"      🔍 Dropdown (.ntnx-select-dropdown or [role=listbox]) exists: {debug_info.get('dropdownExists')}")
+                                    print(f"      🔍 Total spans in document: {debug_info.get('totalSpansInDoc')}")
+                                    matching = debug_info.get('matchingSpans', [])
+                                    print(f"      🔍 Spans containing '{exact_text}': {len(matching)}")
+                                    for m in matching[:10]:
+                                        print(f"         - '{m.get('text')}' visible={m.get('visible')} ({m.get('width')}x{m.get('height')})")
+                                    exact = debug_info.get('exactSpans', [])
+                                    if exact:
+                                        print(f"      ✅ EXACT MATCHES FOUND: {len(exact)}")
+                                        for e in exact:
+                                            print(f"         - '{e.get('text')}' visible={e.get('visible')} parent={e.get('parent')}")
+                                    else:
+                                        print(f"      ❌ NO EXACT MATCHES (text === '{exact_text}')")
+                                
+                                # Find exact match element and get its coordinates for Playwright click
+                                # JavaScript .click() doesn't trigger proper events, so we need Playwright's click
+                                find_exact_js = f"""
+                                () => {{
+                                    const exactText = '{exact_text}';
+                                    
+                                    // Search all spans in document for exact text match
+                                    const spans = Array.from(document.querySelectorAll('span'));
+                                    for (const span of spans) {{
+                                        const text = (span.innerText || span.textContent || '').trim();
+                                        if (text === exactText) {{
+                                            const rect = span.getBoundingClientRect();
+                                            const isVisible = rect.width > 0 && rect.height > 0 && 
+                                                             window.getComputedStyle(span).display !== 'none' &&
+                                                             window.getComputedStyle(span).visibility !== 'hidden';
+                                            if (isVisible) {{
+                                                // Get the clickable target (parent row)
+                                                const clickTarget = span.closest('[role="option"]') || span.closest('.select-row') || span;
+                                                const targetRect = clickTarget.getBoundingClientRect();
+                                                
+                                                // Generate a unique selector for the option
+                                                let optionSelector = null;
+                                                if (clickTarget.id) {{
+                                                    optionSelector = '#' + clickTarget.id;
+                                                }} else if (clickTarget.getAttribute('role') === 'option') {{
+                                                    // Use text-based selector for the option
+                                                    optionSelector = `[role="option"]:has(span:text-is("${{exactText}}"))`;
+                                                }}
+                                                
+                                                return {{ 
+                                                    success: true, 
+                                                    text: text,
+                                                    x: targetRect.x + targetRect.width / 2,
+                                                    y: targetRect.y + targetRect.height / 2,
+                                                    id: clickTarget.id || null,
+                                                    optionSelector: optionSelector
+                                                }};
+                                            }}
+                                        }}
+                                    }}
+                                    
+                                    return {{ success: false, reason: 'No exact match found' }};
+                                }}
+                                """
+                                find_result = await page.evaluate(find_exact_js)
+                                
+                                click_result = None
+                                if find_result and find_result.get('success'):
+                                    x = find_result.get('x')
+                                    y = find_result.get('y')
+                                    option_id = find_result.get('id')
+                                    
+                                    # Try clicking by ID first (most reliable)
+                                    if option_id:
+                                        try:
+                                            await page.click(f'#{option_id}', timeout=3000)
+                                            click_result = {'success': True, 'text': find_result.get('text'), 'clicked': 'id-selector'}
+                                        except Exception as id_click_err:
+                                            print(f"      ⚠️  ID click failed: {id_click_err}")
+                                    
+                                    # Fall back to coordinate click
+                                    if not click_result or not click_result.get('success'):
+                                        try:
+                                            await page.mouse.click(x, y)
+                                            click_result = {'success': True, 'text': find_result.get('text'), 'clicked': 'coordinates'}
+                                        except Exception as coord_err:
+                                            print(f"      ⚠️  Coordinate click failed: {coord_err}")
+                                            click_result = {'success': False, 'reason': str(coord_err)}
+                                else:
+                                    click_result = find_result or {'success': False, 'reason': 'No exact match found in any container'}
+                                if click_result and click_result.get('success'):
+                                    print(f"      ✅ Clicked element with exact text match: '{exact_text}' (via {click_result.get('clicked', 'unknown')})")
+                                    await asyncio.sleep(0.5)
+                                    clicked_exact = True
+                                else:
+                                    reason = click_result.get('reason', 'unknown') if click_result else 'no result'
+                                    print(f"      ⚠️  Exact text match not found: {reason}, trying regular selector...")
+                            except Exception as exact_e:
+                                print(f"      ⚠️  Exact text match failed: {exact_e}, trying regular selector...")
+                    
+                    if not clicked_exact:
+                        # IMPROVEMENT: Try case-insensitive text matching first (faster than agentic fallback)
+                        # If selector uses text='...', try case-insensitive alternatives first
+                        clicked = False
+                        if "text=" in selector:
+                            text_match = re.search(r"text=['\"]([^'\"]+)['\"]", selector)
+                            if text_match:
+                                original_text = text_match.group(1)
+                                # Try case-insensitive alternatives before failing
+                                # :has-text() is more flexible and often case-insensitive
+                                case_insensitive_selectors = [
+                                    f":has-text('{original_text}')",  # Most flexible, often case-insensitive
+                                    f"text='{original_text.lower()}'",  # Lowercase version
+                                    f"text='{original_text.capitalize()}'",  # Capitalized version
+                                    selector,  # Original as last resort
+                                ]
+                                for alt_selector in case_insensitive_selectors:
+                                    try:
+                                        # For login/submit buttons, wait for them to be enabled first
+                                        selector_lower = alt_selector.lower()
+                                        if any(keyword in selector_lower for keyword in ["login", "log in", "submit", "sign in"]):
+                                            try:
+                                                await page.wait_for_selector(f"{alt_selector}:not([disabled])", state="visible", timeout=5000)
+                                                print(f"      ✅ Button is enabled and ready")
+                                            except:
+                                                pass  # Continue to click attempt
+                                        
+                                        await page.click(alt_selector, timeout=3000)
+                                        print(f"      ✅ Clicked with case-insensitive selector: {alt_selector}")
+                                        selector = alt_selector  # Update selector for logging
+                                        clicked = True
+                                        break
+                                    except:
+                                        continue
+                    
+                        if not clicked:
+                            # Not a text selector or case-insensitive alternatives failed, use original
+                            # For login/submit buttons, wait for them to be enabled first
+                            selector_lower = selector.lower()
+                            if any(keyword in selector_lower for keyword in ["login", "log in", "submit", "sign in"]):
+                                try:
+                                    await page.wait_for_selector(f"{selector}:not([disabled])", state="visible", timeout=10000)
+                                    print(f"      ✅ Button is enabled and ready")
+                                except:
+                                    print(f"      ⚠️  Button might be disabled, attempting click anyway")
+                            
+                            await page.click(selector, timeout=int(step.get("timeout_ms", 15000)))
                 except Exception as e:
                     # AGENTIC MODE: If selector fails, try to find button by text/aria-label/id/data-testid
                     print(f"      🤖 Selector failed, trying smart button discovery...")
@@ -939,8 +1242,95 @@ async def execute_gateway_plan(page: Page, plan: Dict[str, Any]) -> None:
                         if not found:
                             raise RuntimeError(f"Could not find username/email field. Analyzed page HTML but found no matching input.")
                     else:
-                        # For other fields, just raise the original error
-                        raise
+                        # For other fields, try common fallback patterns
+                        print(f"      🤖 Primary selector failed, trying fallback patterns...")
+                        
+                        # If selector is a class, try with input tag prefix
+                        if selector.startswith("."):
+                            class_name = selector[1:]  # Remove the dot
+                            fallback_selectors = [
+                                f"input{selector}",  # input.view-as-partner-input
+                                f"input[name='{class_name}']",  # input[name='view-as-partner-input']
+                                f"[name='{class_name}']",  # [name='view-as-partner-input']
+                                selector,  # Original as last resort
+                            ]
+                        elif "name=" in selector:
+                            # Extract name attribute value
+                            name_match = re.search(r"name=['\"]([^'\"]+)['\"]", selector)
+                            if name_match:
+                                name_value = name_match.group(1)
+                                fallback_selectors = [
+                                    f"input[name='{name_value}']",  # input[name='...']
+                                    f".{name_value}",  # .view-as-partner-input
+                                    f"input.{name_value}",  # input.view-as-partner-input
+                                    selector,  # Original
+                                ]
+                            else:
+                                fallback_selectors = [selector]
+                        else:
+                            fallback_selectors = [selector]
+                        
+                        found = False
+                        for fallback_selector in fallback_selectors:
+                            try:
+                                await page.wait_for_selector(fallback_selector, state="visible", timeout=2000)
+                                selector = fallback_selector
+                                print(f"      ✅ Found field with fallback selector: {fallback_selector}")
+                                found = True
+                                break
+                            except:
+                                continue
+                        
+                        if not found:
+                            # Last resort: try to find any input field that might match
+                            print(f"      🔍 Trying agentic discovery for input field...")
+                            # Extract key terms from selector for search
+                            search_terms = []
+                            if "view-as" in selector.lower() or "partner" in selector.lower():
+                                search_terms = ["view", "partner", "input"]
+                            
+                            if search_terms:
+                                # Try to find input by analyzing page
+                                try:
+                                    input_js = f"""
+                                    () => {{
+                                        const inputs = Array.from(document.querySelectorAll('input[type="text"], input:not([type]), input[class*="view"], input[name*="view"], input[name*="partner"]'));
+                                        for (const inp of inputs) {{
+                                            if (inp.offsetParent !== null) {{  // Visible
+                                                const name = inp.name || '';
+                                                const className = inp.className || '';
+                                                if (name.includes('view') || name.includes('partner') || className.includes('view') || className.includes('partner')) {{
+                                                    return inp;
+                                                }}
+                                            }}
+                                        }}
+                                        return null;
+                                    }}
+                                    """
+                                    element_handle = await page.evaluate_handle(input_js)
+                                    if element_handle:
+                                        # Get selector for this element
+                                        selector_js = """
+                                        (el) => {
+                                            if (el.id) return `#${el.id}`;
+                                            if (el.name) return `input[name='${el.name}']`;
+                                            if (el.className) {
+                                                const classes = el.className.split(' ').filter(c => c).join('.');
+                                                return `input.${classes}`;
+                                            }
+                                            return null;
+                                        }
+                                        """
+                                        discovered_selector = await page.evaluate(selector_js, element_handle)
+                                        if discovered_selector:
+                                            selector = discovered_selector
+                                            print(f"      ✅ Agentic discovery found input field: {discovered_selector}")
+                                            found = True
+                                except Exception as agentic_e:
+                                    print(f"      ⚠️  Agentic discovery failed: {agentic_e}")
+                            
+                            if not found:
+                                raise RuntimeError(f"Could not find input field with selector '{step['selector']}'. Tried fallbacks: {fallback_selectors}")
                 
                 # Fill the field - use type() for password fields to trigger keyboard events
                 is_password = "password" in selector.lower() or "passwd" in selector.lower()
@@ -1323,7 +1713,12 @@ class SemanticMapperWithPersona(SemanticMapper):
     def __init__(self, llm, persona: str, base_url: Optional[str] = None):
         super().__init__(llm)
         self.persona = persona
-        self.base_url = base_url or CONFIG['BASE_URL']  # Store base_url for filtering links
+        raw_base_url = base_url or CONFIG['BASE_URL']
+        # Normalize base_url to always have a scheme for proper URL parsing
+        if raw_base_url and not raw_base_url.startswith(('http://', 'https://')):
+            self.base_url = f"http://{raw_base_url}"
+        else:
+            self.base_url = raw_base_url
 
     async def analyze_with_llm(self, prompt: str) -> str:
         persona_prefix = f"[Persona Context] You are mapping the app while logged in as persona='{self.persona}'.\n"
@@ -1341,6 +1736,160 @@ class SemanticMapperWithPersona(SemanticMapper):
         Database table linking will be implemented in Phase 2 via PR-Diff analysis.
         """
         return None
+    
+    async def _open_dropdown_menus(self, page: Page):
+        """
+        Open dropdown menus to discover links inside them.
+        Finds buttons with aria-haspopup="true" or dropdown triggers and clicks them.
+        """
+        try:
+            # Find all dropdown trigger buttons
+            # Include various patterns: aria-haspopup, dropdown-trigger class, etc.
+            dropdown_selectors = [
+                'button[aria-haspopup="true"]',
+                'button[aria-expanded="false"]',
+                '.dropdown-trigger',
+                '[role="button"][aria-haspopup="true"]',
+                'button.dropdown-trigger',
+                '.ntnx-dropdown-trigger',  # Nutanix-specific dropdown trigger
+                'button.ntnx-dropdown-trigger'
+            ]
+            
+            opened_dropdowns = []
+            
+            for selector in dropdown_selectors:
+                try:
+                    buttons = await page.query_selector_all(selector)
+                    for button in buttons:
+                        try:
+                            # Check if dropdown is already open
+                            aria_expanded = await button.get_attribute('aria-expanded')
+                            if aria_expanded == 'true':
+                                continue  # Already open
+                            
+                            # Get button text for logging
+                            button_text = (await button.inner_text()).strip() or await button.get_attribute('aria-label') or 'Unknown'
+                            
+                            # Click to open dropdown
+                            await button.click(timeout=3000)
+                            await asyncio.sleep(0.5)  # Wait for dropdown to appear
+                            
+                            # Verify dropdown opened
+                            aria_expanded_after = await button.get_attribute('aria-expanded')
+                            if aria_expanded_after == 'true':
+                                opened_dropdowns.append(button_text)
+                                print(f"   📂 Opened dropdown menu: {button_text}")
+                            else:
+                                # Check if dropdown appeared in DOM (some don't use aria-expanded)
+                                dropdown_visible = await page.evaluate("""
+                                    () => {
+                                        const menus = document.querySelectorAll('[role="menu"], .dropdown-menu, [class*="dropdown"], [class*="menu"]');
+                                        for (const menu of menus) {
+                                            const rect = menu.getBoundingClientRect();
+                                            if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(menu).display !== 'none') {
+                                                return true;
+                                            }
+                                        }
+                                        return false;
+                                    }
+                                """)
+                                if dropdown_visible:
+                                    opened_dropdowns.append(button_text)
+                                    print(f"   📂 Opened dropdown menu: {button_text}")
+                        except Exception as e:
+                            # If clicking fails, continue with next button
+                            continue
+                except Exception as e:
+                    # If selector fails, continue with next selector
+                    continue
+            
+            if opened_dropdowns:
+                print(f"   ✅ Opened {len(opened_dropdowns)} dropdown menu(s)")
+                # Wait a bit more for all dropdowns to fully render
+                await asyncio.sleep(0.3)
+        except Exception as e:
+            print(f"   ⚠️  Error opening dropdown menus: {e}")
+    
+    def _add_external_link(self, source_url: str, external_url: str, link_text: str, action: str = "navigate"):
+        """
+        Add an external link to the graph as a node and edge.
+        External links are captured but not explored.
+        """
+        from urllib.parse import urlparse
+        import hashlib
+        
+        parsed_url = urlparse(external_url)
+        domain = parsed_url.netloc.split(':')[0]  # Remove port
+        
+        # Create a unique node ID based on the full external URL (to handle multiple links to same domain)
+        # Use a hash of the URL to create a stable but unique ID
+        url_hash = hashlib.md5(external_url.encode()).hexdigest()[:8]
+        external_node_id = f"external_{domain.replace('.', '_').replace(':', '_')}_{url_hash}"
+        
+        # Check if external node already exists (by URL, not just ID)
+        existing_external_node = None
+        for node in self.graph.get("nodes", []):
+            if node.get("url") == external_url:
+                existing_external_node = node
+                external_node_id = node.get("id")  # Use existing ID
+                break
+        
+        # Create or update external node
+        if not existing_external_node:
+            # Use domain as display name, or full URL if domain is not available
+            display_name = domain or external_url
+            if link_text and link_text.strip():
+                display_name = f"{link_text} ({domain})"
+            
+            external_node = {
+                "id": external_node_id,
+                "url": external_url,
+                "semantic_name": external_node_id,
+                "title": display_name,
+                "display_header": display_name,
+                "description": f"External link to {external_url}",
+                "is_external": True,
+                "domain": domain,
+                "headers": [],
+                "components": [],
+                "active_apis": []
+            }
+            self.graph["nodes"].append(external_node)
+            print(f"   🌐 Created external link node: {display_name} → {external_url}")
+        
+        # Find source node ID
+        source_node_id = None
+        for node in self.graph.get("nodes", []):
+            if node.get("url") == source_url:
+                source_node_id = node.get("id")
+                break
+        
+        if not source_node_id:
+            print(f"   ⚠️  Could not find source node for URL: {source_url}")
+            return
+        
+        # Create edge from source to external node
+        edge_data = {
+            "from": source_node_id,
+            "to": external_node_id,
+            "action": action,
+            "link_text": link_text,
+            "href": external_url,
+            "is_external": True,
+            "description": f"External link: {link_text or external_url}"
+        }
+        
+        # Check if edge already exists
+        edge_exists = any(
+            e.get("from") == source_node_id and 
+            e.get("to") == external_node_id and
+            e.get("href") == external_url
+            for e in self.graph.get("edges", [])
+        )
+        
+        if not edge_exists:
+            self.graph["edges"].append(edge_data)
+            print(f"   🌐 Created external link edge: {source_node_id} → {external_node_id} ({link_text or external_url})")
     
     async def _dismiss_cookie_consent(self, page: Page) -> bool:
         """
@@ -1425,7 +1974,7 @@ class SemanticMapperWithPersona(SemanticMapper):
         
         return info
     
-    async def discover_page(self, page: Page, url: str, parent_url: Optional[str] = None, action: str = "navigate") -> str:
+    async def discover_page(self, page: Page, url: str, parent_url: Optional[str] = None, action: str = "navigate", link_text: Optional[str] = None) -> str:
         """
         Override to add page summarization (description field).
         Improvement 2: Add description field that captures what the page represents without dynamic data.
@@ -1448,9 +1997,11 @@ class SemanticMapperWithPersona(SemanticMapper):
         # Check if we're already on this URL (maintains session state)
         current_url = page.url
         if current_url == url or current_url.rstrip('/') == url.rstrip('/'):
-            print(f"   ℹ️  Already on target URL, waiting briefly for dynamic content...")
-            # Don't wait for networkidle if already on URL - just wait briefly
-            await asyncio.sleep(2)
+            print(f"   ℹ️  Already on target URL, waiting for dynamic content to load...")
+            # Wait for active requests to complete even if already on URL
+            # This ensures dynamic content (like headers, links) is fully loaded
+            await wait_for_active_requests_complete(page, timeout=30000)
+            await asyncio.sleep(1)  # Small delay for final rendering
         else:
             try:
                 print(f"   ⏳ Waiting for page load and active requests to complete...")
@@ -1494,21 +2045,88 @@ Respond with ONLY a short semantic name (e.g., "items_dashboard", "login_page", 
         semantic_name = semantic_name.strip().lower().replace(' ', '_')
         
         # Generate a human-readable display title/header
-        header_prompt = f"""Generate a clean, human-readable page title/header for this page:
+        # For home page, use the page title (app name) instead of inferring from headers
+        display_header = None
+        
+        # Check if this is the home page (URL path is / or empty)
+        from urllib.parse import urlparse
+        parsed_url = urlparse(url)
+        is_home_page = parsed_url.path == '/' or parsed_url.path == ''
+        
+        if is_home_page:
+            # For home page, use the page title (app name) directly
+            display_header = title
+            print(f"   🏠 Home page detected, using app name as display_header: {display_header}")
+        else:
+            # For other pages, try to find h1 tag, then first header, then use LLM
+            # Try to find h1 tag specifically (most likely to be the page title)
+            try:
+                h1_elements = await page.query_selector_all('h1')
+                for h1 in h1_elements:
+                    # Skip h1 in nav/footer
+                    is_in_nav = await h1.evaluate('''(el) => {
+                        const parent = el.closest('nav, footer, header, .nav, .footer, .header');
+                        return parent !== null;
+                    }''')
+                    if is_in_nav:
+                        continue
+                    
+                    h1_text = (await h1.inner_text()).strip()
+                    if h1_text and len(h1_text) >= 3 and len(h1_text) <= 100:
+                        # Check if it's not just navigation noise
+                        skip_patterns = ['copyright', '©', 'all rights reserved', 'navigation', 'menu']
+                        h1_lower = h1_text.lower()
+                        if not any(pattern in h1_lower for pattern in skip_patterns):
+                            display_header = h1_text
+                            print(f"   📋 Using h1 tag as display_header: {display_header}")
+                            break
+            except Exception as e:
+                print(f"   ⚠️  Error extracting h1: {e}")
+            
+            # If no h1 found, try the first header from structured_info
+            if not display_header and structured_info.get('headers') and len(structured_info['headers']) > 0:
+                first_header = structured_info['headers'][0].strip()
+                # Filter out headers that are likely navigation/footer noise or content (not page titles)
+                skip_patterns = [
+                    'copyright', '©', 'all rights reserved', 
+                    'navigation', 'menu', 'skip to', 'view as',
+                ]
+                first_header_lower = first_header.lower()
+                
+                # Use first header if it's suitable (not too long, not nav noise, not content-like)
+                # Content-like headers are usually very long or contain colons (like "Cisco, Pure Storage, and Nutanix: Stronger Together")
+                is_content_like = (
+                    len(first_header) > 60 or  # Very long headers are usually content
+                    ':' in first_header or  # Headers with colons are often content announcements
+                    first_header.count(',') > 2  # Multiple commas suggest content, not title
+                )
+                
+                if (len(first_header) >= 3 and 
+                    len(first_header) <= 60 and  # Not too long for a page title
+                    not any(pattern in first_header_lower for pattern in skip_patterns) and
+                    not is_content_like):  # Not content-like
+                    display_header = first_header
+                    print(f"   📋 Using first header as display_header: {display_header}")
+            
+            # If no suitable header found (and not home page), use LLM to generate one
+            if not display_header:
+                header_prompt = f"""Generate a clean, human-readable page title/header for this page:
 URL: {url}
 Page Title: {title}
 Semantic Name: {semantic_name}
-Main Header: {structured_info['headers'][0] if structured_info['headers'] else 'N/A'}
+Available Headers: {', '.join(structured_info['headers'][:5]) if structured_info['headers'] else 'N/A'}
 
 Respond with ONLY a short, clean title (e.g., "Order Management Dashboard", "Orders Page", "Product Catalog", "Shopping Cart").
 Do not include quotes or extra formatting, just the title text.
 """
-        display_header = await self.analyze_with_llm(header_prompt)
-        display_header = display_header.strip().strip('"').strip("'")
-        
-        # Fallback: generate from semantic_name if LLM fails
-        if not display_header or len(display_header) < 3:
-            display_header = semantic_name.replace('_', ' ').title()
+                display_header = await self.analyze_with_llm(header_prompt)
+                display_header = display_header.strip().strip('"').strip("'")
+                print(f"   🤖 Generated display_header via LLM: {display_header}")
+            
+            # Final fallback: generate from semantic_name if LLM fails
+            if not display_header or len(display_header) < 3:
+                display_header = semantic_name.replace('_', ' ').title()
+                print(f"   ⚠️  Using fallback display_header from semantic_name: {display_header}")
         
         # IMPROVEMENT 2: Generate page description/summary from structured info
         summary_prompt = f"""Summarize what this page represents, focusing on structure and purpose, not specific data values.
@@ -1568,14 +2186,26 @@ Focus on the structure, purpose, and type of information displayed.
         
         self.graph["nodes"].append(node)
         
+        # Log what was extracted
+        print(f"   ✅ Node: {node_id}")
+        print(f"   📝 Description: {page_description[:200]}..." if len(page_description) > 200 else f"   📝 Description: {page_description}")
+        print(f"   📋 Headers: {len(structured_info.get('headers', []))} header(s)")
+        if structured_info.get('headers'):
+            print(f"      → {', '.join(structured_info['headers'][:10])}")
+        print(f"   📦 Components: {len(components)}")
+        print(f"   📡 APIs: {len(active_apis)}")
+        
         # Create edge if there's a parent
         if parent_url:
             self.graph["edges"].append({
                 "from": parent_url,
                 "to": url,
                 "action": action,
-                "selector": None
+                "selector": None,
+                "link_text": link_text  # Link text passed as parameter (e.g., "Marketing", "Sales")
             })
+            if link_text:
+                print(f"   🔗 Created edge with link text: '{link_text}' ({parent_url} → {url})")
         
         print(f"   ✅ Node: {node_id}")
         print(f"   📝 Description: {page_description}")
@@ -1671,6 +2301,7 @@ Focus on the structure, purpose, and type of information displayed.
         2. Stable selector building - avoid dynamic text in selectors
         3. Filter out form controls (date filters, checkboxes) - only navigation links
         4. Filter out query-parameter-only links (filters, not navigation)
+        5. Open dropdown menus to discover links inside them
         
         NOTE: This method expects the page to already be loaded and network idle.
         It's called after discover_page() which waits for network completion.
@@ -1684,8 +2315,15 @@ Focus on the structure, purpose, and type of information displayed.
         except:
             pass  # If it times out, page might already be loaded, continue anyway
         
+        # STEP 1: Open dropdown menus to discover links inside them
+        await self._open_dropdown_menus(page)
+        
         # Extract domain from base_url for filtering
-        base_parsed = urlparse(self.base_url)
+        # Normalize base_url to ensure it has a scheme for proper parsing
+        normalized_base_url = self.base_url
+        if not normalized_base_url.startswith(('http://', 'https://')):
+            normalized_base_url = f"http://{normalized_base_url}"
+        base_parsed = urlparse(normalized_base_url)
         base_domain = base_parsed.netloc.split(':')[0]  # Remove port, get just domain
         
         try:
@@ -1697,11 +2335,23 @@ Focus on the structure, purpose, and type of information displayed.
                 # FILTER OUT: Links inside form controls, date pickers, checkboxes, filters
                 try:
                     # Check if link is inside a form control or filter component
+                    # BUT allow links in dropdown menus (which we just opened)
                     is_in_form_control = await link.evaluate("""
                         el => {
                             // Check if link is inside input, select, or form control
                             const parent = el.closest('form, .filter, .date-picker, .datepicker, [role="combobox"], [role="listbox"]');
                             if (parent) return true;
+                            
+                            // Allow links in dropdown menus (role="menu" or dropdown containers)
+                            const menuParent = el.closest('[role="menu"], .dropdown-menu, [class*="dropdown"], [class*="menu"]');
+                            if (menuParent) {
+                                // Check if menu is visible (opened)
+                                const rect = menuParent.getBoundingClientRect();
+                                const style = window.getComputedStyle(menuParent);
+                                if (rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden') {
+                                    return false; // Allow links in visible dropdown menus
+                                }
+                            }
                             
                             // Check if link is a date/checkbox/select element itself
                             const tagName = el.tagName.toLowerCase();
@@ -1763,11 +2413,15 @@ Focus on the structure, purpose, and type of information displayed.
                         full_url = f"{self.base_url}{href}"
                     elif href.startswith('http'):
                         full_url = href
-                        # IMPROVEMENT 1: Domain filtering - only include same domain
+                        # Check if it's external domain
                         link_parsed = urlparse(full_url)
                         link_domain = link_parsed.netloc.split(':')[0]
                         if link_domain != base_domain:
-                            continue  # Skip different domains
+                            # External link - capture it but don't explore
+                            current_url = page.url
+                            self._add_external_link(current_url, full_url, text, "navigate")
+                            print(f"   🌐 Captured external link: {text} → {full_url}")
+                            continue  # Don't explore external links
                     else:
                         # Relative path, construct full URL
                         current_url = page.url
@@ -1831,10 +2485,27 @@ Focus on the structure, purpose, and type of information displayed.
             for js_link in js_nav_elements:
                 try:
                     # FILTER OUT: Elements inside form controls or filters
+                    # BUT allow links in opened dropdown menus
                     is_in_form_control = await js_link.evaluate("""
                         el => {
-                            const parent = el.closest('form, .filter, .date-picker, .datepicker, [role="combobox"], [role="listbox"], [role="menu"], [role="menuitem"]');
-                            if (parent && !parent.closest('nav, header')) return true;  // Allow nav menus
+                            const parent = el.closest('form, .filter, .date-picker, .datepicker, [role="combobox"], [role="listbox"]');
+                            if (parent) return true;
+                            
+                            // Check if element is in a dropdown menu
+                            const menuParent = el.closest('[role="menu"], [role="menuitem"], .dropdown-menu, [class*="dropdown"], [class*="menu"]');
+                            if (menuParent) {
+                                // Allow if menu is visible (opened dropdown)
+                                const rect = menuParent.getBoundingClientRect();
+                                const style = window.getComputedStyle(menuParent);
+                                if (rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden') {
+                                    return false; // Allow links in visible dropdown menus
+                                }
+                                // Also allow if parent is in nav/header (persistent nav menus)
+                                if (menuParent.closest('nav, header')) {
+                                    return false;
+                                }
+                            }
+                            
                             const tagName = el.tagName.toLowerCase();
                             if (tagName === 'input' || tagName === 'select') return true;
                             return false;
@@ -1866,24 +2537,50 @@ Focus on the structure, purpose, and type of information displayed.
                         continue
                     
                     # Build selector for this element (for re-querying after navigation)
+                    # Use multiple fallback strategies for better reliability
                     selector = None
+                    selector_fallbacks = []
+                    
                     if link_id:
-                        selector = f"[id='{link_id}']"
-                    elif data_testid:
-                        selector = f"[data-testid='{data_testid}']"
-                    elif text:
+                        selector = f"#{link_id}"
+                        selector_fallbacks.append(f"[id='{link_id}']")
+                    
+                    if data_testid:
+                        if not selector:
+                            selector = f"[data-testid='{data_testid}']"
+                        selector_fallbacks.append(f"[data-testid='{data_testid}']")
+                    
+                    if text:
                         text_clean = text.replace("'", "\\'").replace('"', '\\"')
-                        selector = f"[role='link']:has-text('{text_clean[:50]}')"
-                    elif class_name:
+                        # Try multiple text-based selectors
+                        text_selectors = [
+                            f"a[role='link']:has-text('{text_clean}')",  # Most specific
+                            f"[role='link']:has-text('{text_clean}')",  # More general
+                            f"a:has-text('{text_clean}')",  # Even more general
+                            f":has-text('{text_clean}')"  # Most general
+                        ]
+                        if not selector:
+                            selector = text_selectors[0]
+                        selector_fallbacks.extend(text_selectors)
+                    
+                    if class_name:
                         classes = class_name.split()
                         meaningful_classes = [c for c in classes if c and len(c) > 3 and not c.startswith('data-')]
                         if meaningful_classes:
-                            selector = f".{meaningful_classes[0]}"
+                            class_selector = f"a.{meaningful_classes[0]}"
+                            if not selector:
+                                selector = class_selector
+                            selector_fallbacks.append(class_selector)
+                            # Also try with text
+                            if text:
+                                text_clean = text.replace("'", "\\'").replace('"', '\\"')
+                                selector_fallbacks.append(f"a.{meaningful_classes[0]}:has-text('{text_clean}')")
                     
                     if not selector:
                         # Last resort: use text with role
-                        text_clean = text.replace("'", "\\'").replace('"', '\\"')
-                        selector = f"[role='link']:has-text('{text_clean[:30]}')"
+                        if text:
+                            text_clean = text.replace("'", "\\'").replace('"', '\\"')
+                            selector = f"[role='link']:has-text('{text_clean[:30]}')"
                     
                     # Store metadata for later processing
                     js_nav_metadata.append({
@@ -1892,7 +2589,8 @@ Focus on the structure, purpose, and type of information displayed.
                         'link_id': link_id,
                         'data_testid': data_testid,
                         'class_name': class_name,
-                        'selector': selector
+                        'selector': selector,
+                        'selector_fallbacks': selector_fallbacks
                     })
                 except Exception as e:
                     # If we can't get metadata, skip this element
@@ -1909,6 +2607,7 @@ Focus on the structure, purpose, and type of information displayed.
                 text = metadata['text']
                 text_normalized = metadata['text_normalized']
                 selector = metadata['selector']
+                selector_fallbacks = metadata.get('selector_fallbacks', [])
                 
                 # Skip if we've already discovered a link with this text (avoid duplicates)
                 if text_normalized in discovered_js_links:
@@ -1920,44 +2619,158 @@ Focus on the structure, purpose, and type of information displayed.
                 
                 try:
                     # Re-query the element using selector (ElementHandle is invalid after navigation)
-                    js_link = await page.query_selector(selector)
+                    js_link = None
+                    
+                    # Try multiple selector strategies (use stored fallbacks if available)
+                    selector_strategies = []
+                    
+                    # Strategy 1: Use provided selector
+                    if selector:
+                        selector_strategies.append(selector)
+                    
+                    # Strategy 2: Use stored fallback selectors
+                    if selector_fallbacks:
+                        selector_strategies.extend(selector_fallbacks)
+                    
+                    # Strategy 3: Try ID if available
+                    if metadata['link_id']:
+                        selector_strategies.append(f"#{metadata['link_id']}")
+                        selector_strategies.append(f"[id='{metadata['link_id']}']")
+                    
+                    # Strategy 4: Try data-testid if available
+                    if metadata['data_testid']:
+                        selector_strategies.append(f"[data-testid='{metadata['data_testid']}']")
+                    
+                    # Strategy 5: Try role="link" with exact text match
+                    if text:
+                        text_clean = text.replace("'", "\\'").replace('"', '\\"')
+                        selector_strategies.extend([
+                            f"a[role='link']:has-text('{text_clean}')",
+                            f"[role='link']:has-text('{text_clean}')",
+                            f"a:has-text('{text_clean}')",
+                            f":has-text('{text_clean}')"
+                        ])
+                    
+                    # Strategy 6: Try class-based selector if available
+                    if metadata['class_name']:
+                        classes = metadata['class_name'].split()
+                        meaningful_classes = [c for c in classes if c and len(c) > 3 and not c.startswith('data-')]
+                        if meaningful_classes:
+                            selector_strategies.append(f"a.{meaningful_classes[0]}")
+                            if text:
+                                text_clean = text.replace("'", "\\'").replace('"', '\\"')
+                                selector_strategies.append(f"a.{meaningful_classes[0]}:has-text('{text_clean}')")
+                    
+                    # Try each selector strategy
+                    for sel_strategy in selector_strategies:
+                        try:
+                            js_link = await page.query_selector(sel_strategy)
+                            if js_link:
+                                # Verify it's visible and has the correct text
+                                is_visible = await js_link.is_visible()
+                                link_text = (await js_link.inner_text()).strip()
+                                if is_visible and text.lower() in link_text.lower():
+                                    break  # Found valid element
+                                else:
+                                    js_link = None  # Reset if not visible or wrong text
+                        except:
+                            continue
+                    
+                    # If still not found, try JavaScript-based search and click directly
                     if not js_link:
-                        # Try alternative selectors if primary fails
-                        if metadata['link_id']:
-                            js_link = await page.query_selector(f"#{metadata['link_id']}")
-                        elif metadata['data_testid']:
-                            js_link = await page.query_selector(f"[data-testid='{metadata['data_testid']}']")
-                        elif text:
-                            text_clean = text.replace("'", "\\'").replace('"', '\\"')
-                            js_link = await page.query_selector(f":has-text('{text_clean}')")
+                        # Use JavaScript to find and click the element directly
+                        click_result = await page.evaluate(f"""
+                            () => {{
+                                const links = Array.from(document.querySelectorAll('a[role="link"], a:not([href])'));
+                                for (const link of links) {{
+                                    const linkText = (link.innerText || link.textContent || '').trim();
+                                    if (linkText === '{text}' || linkText.toLowerCase() === '{text.lower()}') {{
+                                        const rect = link.getBoundingClientRect();
+                                        if (rect.width > 0 && rect.height > 0) {{
+                                            // Click directly in JavaScript
+                                            link.click();
+                                            return {{ success: true, text: linkText }};
+                                        }}
+                                    }}
+                                }}
+                                return {{ success: false, reason: 'Element not found' }};
+                            }}
+                        """)
+                        
+                        if click_result and click_result.get('success'):
+                            # Element was clicked, wait for navigation
+                            print(f"   ✅ Clicked JS nav element via JavaScript: {text}")
+                            js_link = True  # Mark as found so we proceed to URL checking
+                        else:
+                            js_link = None
+                    
+                    # Track if element was clicked via JavaScript fallback
+                    clicked_via_js = False
                     
                     if not js_link:
-                        print(f"   ⚠️  Could not find JS nav element: {text}")
+                        print(f"   ⚠️  Could not find JS nav element: {text} (tried {len(selector_strategies)} selector strategies)")
                         continue
                     
                     # Click the element to trigger navigation
-                    await js_link.click(timeout=5000)
+                    if js_link is True:
+                        # Already clicked via JavaScript fallback
+                        clicked_via_js = True
+                    else:
+                        # Click using Playwright ElementHandle
+                        try:
+                            # Scroll into view first to ensure element is clickable
+                            await js_link.scroll_into_view_if_needed()
+                            await asyncio.sleep(0.2)  # Small delay after scroll
+                            await js_link.click(timeout=5000)
+                        except Exception as click_err:
+                            print(f"   ⚠️  Failed to click JS nav element '{text}': {click_err}")
+                            continue
                     
                     # Wait for URL change (React Router can take time)
-                    # Poll for URL change up to 3 seconds
+                    # Poll for URL change up to 5 seconds (increased from 3s)
                     url_changed = False
                     target_url = None
-                    for wait_attempt in range(6):  # 6 attempts * 0.5s = 3s max wait
+                    for wait_attempt in range(10):  # 10 attempts * 0.5s = 5s max wait
                         await asyncio.sleep(0.5)
                         current_url_after = page.url
                         if current_url_after != current_url_before:
                             url_changed = True
                             target_url = current_url_after
+                            print(f"   ✅ URL changed detected (attempt {wait_attempt + 1}): {current_url_before} → {target_url}")
                             break
+                    if not url_changed:
+                        print(f"   ⚠️  URL did not change after clicking '{text}' (waited 5s), still on: {current_url_before}")
                     
                     if url_changed and target_url:
+                        print(f"   🔍 URL changed after clicking '{text}': {current_url_before} → {target_url}")
+                        # Wait for page to fully load after navigation
+                        try:
+                            await page.wait_for_load_state("networkidle", timeout=10000)
+                            await asyncio.sleep(0.5)  # Additional small delay for any final rendering
+                            print(f"   ✅ Page loaded after clicking: {text}")
+                        except Exception as load_err:
+                            # If networkidle times out, try domcontentloaded as fallback
+                            try:
+                                await page.wait_for_load_state("domcontentloaded", timeout=5000)
+                                await asyncio.sleep(0.5)
+                                print(f"   ⚠️  Page loaded (domcontentloaded) after clicking: {text}")
+                            except:
+                                print(f"   ⚠️  Page load wait timed out for: {text}, continuing anyway")
                         # URL changed - this is a navigation link
                         
                         # Check if it's same domain
                         target_parsed = urlparse(target_url)
                         target_domain = target_parsed.netloc.split(':')[0]
-                        if target_domain != base_domain:
-                            # Different domain - skip
+                        # Normalize base_url for comparison
+                        normalized_base_url = self.base_url
+                        if not normalized_base_url.startswith(('http://', 'https://')):
+                            normalized_base_url = f"http://{normalized_base_url}"
+                        base_parsed_compare = urlparse(normalized_base_url)
+                        base_domain_compare = base_parsed_compare.netloc.split(':')[0]
+                        if target_domain != base_domain_compare:
+                            # Different domain - capture as external link
+                            print(f"   🌐 Captured external JS nav link: {text} → {target_url} (target_domain: {target_domain}, base_domain: {base_domain_compare})")
+                            self._add_external_link(current_url_before, target_url, text, "click_js_nav")
                             # Navigate back to original page
                             try:
                                 await page.goto(current_url_before, wait_until="load", timeout=10000)
@@ -1979,16 +2792,35 @@ Focus on the structure, purpose, and type of information displayed.
                             continue
                         
                         # Use selector from metadata (already built)
-                        links.append({
+                        # Include fallback selectors for better reliability
+                        link_data = {
                             "url": target_url,
                             "text": text,
                             "selector": selector,
                             "href": None,  # No href - JS-based navigation
                             "js_navigation": True  # Mark as JS-based navigation
-                        })
+                        }
+                        # Add fallback selectors if available (from metadata)
+                        metadata_fallbacks = metadata.get('selector_fallbacks', [])
+                        if metadata_fallbacks:
+                            link_data["selector_fallbacks"] = metadata_fallbacks
+                        links.append(link_data)
                         
                         print(f"   🔗 Discovered JS nav link: {text} → {target_url}")
+                        print(f"      Selector: {selector}")
+                        if metadata_fallbacks:
+                            print(f"      Fallback selectors: {len(metadata_fallbacks)} available")
                         discovered_js_links.add(text_normalized)  # Mark as discovered
+                        
+                        # IMPORTANT: Discover the page immediately while we're on it
+                        # This ensures headers, components, and links from the new page are captured
+                        print(f"   🔍 Immediately discovering page: {target_url}")
+                        try:
+                            # Pass link text so edge can be labeled correctly
+                            await self.discover_page(page, target_url, parent_url=current_url_before, action="click_js_nav", link_text=text)
+                            print(f"   ✅ Discovered page: {target_url}")
+                        except Exception as discover_err:
+                            print(f"   ⚠️  Error discovering page {target_url}: {discover_err}")
                         
                         # Navigate back to original page to continue discovery
                         try:
@@ -2002,6 +2834,7 @@ Focus on the structure, purpose, and type of information displayed.
                     else:
                         # URL didn't change - might be a button that opens modal/form, not navigation
                         # Or it might be the current page (active link)
+                        print(f"   ⚠️  URL did not change after clicking '{text}': {current_url_before} (still on same page)")
                         # Navigate back if we're not on the original page (shouldn't happen, but safety check)
                         if page.url != current_url_before:
                             try:
@@ -2261,28 +3094,99 @@ Focus on the structure, purpose, and type of information displayed.
                 if is_js_nav:
                     # For JS navigation links, click the element instead of using page.goto()
                     selector = link.get('selector')
-                    if selector:
+                    link_text = link.get('text', '')
+                    
+                    if selector or link_text:
                         try:
-                            print(f"      🖱️  Clicking JS nav link: {selector}")
-                            await page.click(selector, timeout=5000)
+                            print(f"      🖱️  Clicking JS nav link: {link_text or selector}")
+                            
+                            # Try multiple strategies to click the JS nav link
+                            clicked = False
+                            
+                            # Strategy 1: Use selector if available
+                            if selector:
+                                try:
+                                    await page.click(selector, timeout=5000)
+                                    clicked = True
+                                except Exception as sel_err:
+                                    print(f"      ⚠️  Selector click failed: {sel_err}")
+                            
+                            # Strategy 1b: Try fallback selectors if primary failed
+                            if not clicked:
+                                selector_fallbacks = link.get('selector_fallbacks', [])
+                                for fallback_sel in selector_fallbacks:
+                                    try:
+                                        await page.click(fallback_sel, timeout=3000)
+                                        clicked = True
+                                        print(f"      ✅ Clicked using fallback selector: {fallback_sel}")
+                                        break
+                                    except:
+                                        continue
+                            
+                            # Strategy 2: Use JavaScript to find and click by text
+                            if not clicked and link_text:
+                                click_result = await page.evaluate(f"""
+                                    () => {{
+                                        const links = Array.from(document.querySelectorAll('a[role="link"], a:not([href])'));
+                                        for (const linkEl of links) {{
+                                            const linkText = (linkEl.innerText || linkEl.textContent || '').trim();
+                                            if (linkText === '{link_text}' || linkText.toLowerCase() === '{link_text.lower()}') {{
+                                                const rect = linkEl.getBoundingClientRect();
+                                                if (rect.width > 0 && rect.height > 0) {{
+                                                    linkEl.click();
+                                                    return {{ success: true, text: linkText }};
+                                                }}
+                                            }}
+                                        }}
+                                        return {{ success: false, reason: 'Element not found' }};
+                                    }}
+                                """)
+                                
+                                if click_result and click_result.get('success'):
+                                    clicked = True
+                                    print(f"      ✅ Clicked via JavaScript text search")
+                            
+                            if not clicked:
+                                print(f"      ⚠️  Could not click JS nav link: {link_text or selector}")
+                                continue
+                            
                             # Wait for navigation/redirect to complete
                             await asyncio.sleep(1)
+                            
+                            # Wait for URL change (React Router can take time)
+                            initial_url = page.url
+                            for wait_attempt in range(10):  # 10 attempts * 0.5s = 5s max wait
+                                await asyncio.sleep(0.5)
+                                if page.url != initial_url:
+                                    break
+                            
                             # Wait for active requests to complete
                             await wait_for_active_requests_complete(page, timeout=30000)
+                            
+                            # Wait for page load
+                            try:
+                                await page.wait_for_load_state("networkidle", timeout=10000)
+                            except:
+                                await page.wait_for_load_state("domcontentloaded", timeout=5000)
+                            
+                            await asyncio.sleep(0.5)  # Small delay for final rendering
                             
                             # Verify we navigated to the expected URL
                             current_url = page.url.rstrip('/').lower()
                             expected_url = link['url'].rstrip('/').lower()
                             if current_url != expected_url:
                                 print(f"      ⚠️  Navigation mismatch: expected {link['url']}, got {page.url}")
-                                # Continue anyway - might have redirected
+                                # Update link URL to actual URL if different
+                                link['url'] = page.url
                             
                             print(f"      ✅ JS nav link clicked, page loaded: {page.url}")
                         except Exception as click_err:
                             print(f"      ⚠️  Failed to click JS nav link: {click_err}")
+                            import traceback
+                            print(f"      Traceback: {traceback.format_exc()}")
                             continue  # Skip this link and continue
                     else:
-                        print(f"      ⚠️  No selector for JS nav link, skipping")
+                        print(f"      ⚠️  No selector or text for JS nav link, skipping")
                         continue
                 else:
                     # Regular link with href - use page.goto()
@@ -2353,13 +3257,36 @@ Focus on the structure, purpose, and type of information displayed.
                             for e in self.graph['edges']
                         )
                         if not edge_exists:
-                            self.graph['edges'].append({
-                                "from": current_node_id,
-                                "to": target_node_id,
-                                "action": "navigate",
-                                "selector": link['selector']
-                            })
-                            print(f"      ✅ Created edge: {current_node_id} → {target_node_id}")
+                            # Get link text for better edge labels
+                            link_text = link.get('text', '')
+                            action_type = "navigate"
+                            if link.get('js_navigation'):
+                                action_type = "click_js_nav"
+                            
+                            # Update existing edge if it was created during discover_page
+                            existing_edge = None
+                            for e in self.graph['edges']:
+                                if (e.get('from') == current_node_id or e.get('from') == current_url) and \
+                                   (e.get('to') == target_node_id or e.get('to') == link['url']):
+                                    existing_edge = e
+                                    break
+                            
+                            if existing_edge:
+                                # Update existing edge with link text
+                                existing_edge['link_text'] = link_text
+                                existing_edge['action'] = action_type
+                                existing_edge['selector'] = link.get('selector')
+                                print(f"      ✅ Updated edge with link text: '{link_text}' ({current_node_id} → {target_node_id})")
+                            else:
+                                # Create new edge
+                                self.graph['edges'].append({
+                                    "from": current_node_id,
+                                    "to": target_node_id,
+                                    "action": action_type,
+                                    "selector": link.get('selector'),
+                                    "link_text": link_text
+                                })
+                                print(f"      ✅ Created edge: '{link_text}' ({current_node_id} → {target_node_id})")
                 
             except Exception as e:
                 print(f"   ⚠️ Failed to follow link {link['url']}: {e}")
@@ -2374,12 +3301,14 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--persona", required=True, help="internal|reseller|distributor")
     parser.add_argument("--gateway-instructions", default=None, help="Path to NL gateway instructions txt (optional - skip if not needed)")
-    parser.add_argument("--storage-state", required=True, help="Path to write/read storage state JSON")
+    parser.add_argument("--gateway-plan", default=None, help="Path to save/load compiled gateway plan JSON (optional - if provided, will load plan instead of compiling)")
+    parser.add_argument("--storage-state", default=None, help="Path to write/read storage state JSON (optional - deprecated, gateway plan is preferred)")
     parser.add_argument("--output", default="semantic_graph.json", help="Output graph json")
     parser.add_argument("--base-url", default=CONFIG["BASE_URL"], help="Base URL to open")
     parser.add_argument("--headless", default="false", help="true|false")
     parser.add_argument("--max-depth", type=int, default=3)
     parser.add_argument("--skip-gateway", action="store_true")
+    parser.add_argument("--force-recompile-gateway", action="store_true", help="Force recompilation of gateway plan even if cached plan exists")
     parser.add_argument("--llm-provider", default="nutanix", choices=["nutanix", "ollama"], help="LLM provider to use for page analysis (many calls)")
     parser.add_argument("--gateway-llm-provider", default="nutanix", choices=["nutanix", "ollama"], help="LLM provider to use for gateway compilation (1 call, critical - recommend nutanix)")
     parser.add_argument("--ollama-model", default="llama3.1:8b", help="Ollama model name (when using ollama provider)")
@@ -2447,100 +3376,154 @@ async def main():
     else:
         raise ValueError(f"Unsupported gateway LLM provider: {args.gateway_llm_provider}")
 
-    storage_state_path = Path(args.storage_state)
-    storage_state_path.parent.mkdir(parents=True, exist_ok=True)
+    # Determine gateway plan path (preferred over storage state)
+    gateway_plan_path = None
+    if args.gateway_plan:
+        gateway_plan_path = Path(args.gateway_plan)
+        gateway_plan_path.parent.mkdir(parents=True, exist_ok=True)
+    elif args.gateway_instructions:
+        # Auto-generate plan path from instructions file
+        instructions_path = Path(args.gateway_instructions)
+        plan_name = f"gateway_plan_{args.persona}.json"
+        gateway_plan_path = instructions_path.parent / plan_name
+        gateway_plan_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Storage state path (optional, deprecated)
+    storage_state_path = None
+    if args.storage_state:
+        storage_state_path = Path(args.storage_state)
+        storage_state_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"\n🌐 Launching browser (headless={headless})...")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
         print("✅ Browser launched")
 
-        # Check if storage_state exists and is valid - if so, skip gateway automatically
-        storage_state_exists = storage_state_path.exists() and storage_state_path.stat().st_size > 0
+        # Always create fresh context - we'll run gateway plan each time
+        print(f"\n📄 Creating fresh browser context...")
+        context = await browser.new_context()
+        page = await context.new_page()
+        print("✅ Context created")
         
         if args.skip_gateway:
-            if not storage_state_exists:
-                raise RuntimeError(f"--skip-gateway set but storage state not found: {storage_state_path}")
-            print(f"\n📄 Loading existing storage state from: {storage_state_path}")
-            context = await browser.new_context(storage_state=str(storage_state_path))
-            page = await context.new_page()
-            print("✅ Context created with saved storage state")
-            
-            # Navigate to base URL to verify session is still valid
-            print(f"\n🌐 Navigating to base URL: {args.base_url}")
-            try:
-                print(f"   ⏳ Waiting for page load and active requests to complete...")
-                await page.goto(args.base_url, wait_until="load", timeout=60000)
-                await wait_for_active_requests_complete(page, timeout=30000)
-                print(f"   ✅ Page loaded and active requests completed: {page.url}")
-            except Exception as e:
-                print(f"   ⚠️  Navigation warning: {e}")
-                print(f"   Current URL: {page.url}")
-        elif storage_state_exists:
-            # Storage state exists - load it and skip gateway (no LLM call needed!)
-            print(f"\n📄 Found existing storage state: {storage_state_path}")
-            print(f"   ✅ Loading saved authentication session (skipping gateway LLM compilation)")
-            context = await browser.new_context(storage_state=str(storage_state_path))
-            page = await context.new_page()
-            print("✅ Context created with saved storage state")
-            
-            # Navigate to base URL
-            print(f"\n🌐 Navigating to base URL: {args.base_url}")
-            try:
-                print(f"   ⏳ Waiting for page load and active requests to complete...")
-                await page.goto(args.base_url, wait_until="load", timeout=60000)
-                await wait_for_active_requests_complete(page, timeout=30000)
-                print(f"   ✅ Page loaded and active requests completed: {page.url}")
-            except Exception as e:
-                print(f"   ⚠️  Navigation warning: {e}")
-                print(f"   Current URL: {page.url}")
-            
-            # Skip gateway execution - we already have authenticated session
+            # Skip gateway but still navigate to base URL
             print("\n" + "=" * 70)
-            print("⏭️  SKIPPING GATEWAY (using existing storage state)")
+            print("⏭️  SKIPPING GATEWAY (--skip-gateway flag set)")
             print("=" * 70)
             print(f"📋 Persona: {args.persona}")
-            print(f"💾 Loaded storage state from: {storage_state_path}")
-            print(f"🌐 Starting from: {page.url}")
-        else:
-            # No storage state exists - create fresh context and run gateway
-            print(f"\n📄 Creating fresh browser context (no existing storage state found)...")
-            context = await browser.new_context()
-            page = await context.new_page()
-            print("✅ Context created")
-
-            # Start at base URL
-            print(f"\n🌐 Navigating to base URL: {args.base_url}")
+        
+        # Start at base URL (always navigate, even if skipping gateway)
+        print(f"\n🌐 Navigating to base URL: {args.base_url}")
+        try:
+            print(f"   ⏳ Waiting for page load and active requests to complete...")
+            await page.goto(args.base_url, wait_until="load", timeout=60000)
+            # Wait for active requests to complete (more reliable than networkidle)
+            await wait_for_active_requests_complete(page, timeout=30000)
+            print(f"   ✅ Page loaded and active requests completed: {page.url}")
+        except Exception as e:
+            # If load fails, try domcontentloaded
+            print(f"   ⚠️  Load timeout, trying domcontentloaded...")
             try:
-                print(f"   ⏳ Waiting for page load and active requests to complete...")
-                await page.goto(args.base_url, wait_until="load", timeout=60000)
-                # Wait for active requests to complete (more reliable than networkidle)
-                await wait_for_active_requests_complete(page, timeout=30000)
-                print(f"   ✅ Page loaded and active requests completed: {page.url}")
-            except Exception as e:
-                # If load fails, try domcontentloaded
-                print(f"   ⚠️  Load timeout, trying domcontentloaded...")
-                try:
-                    await page.goto(args.base_url, wait_until="domcontentloaded", timeout=30000)
-                    await wait_for_active_requests_complete(page, timeout=20000)
-                    print(f"   ✅ Page loaded (domcontentloaded) and active requests completed: {page.url}")
-                except Exception as e2:
-                    print(f"   ⚠️  Navigation warning: {e2}")
-                    print(f"   Current URL: {page.url}")
-                    # Continue anyway - page might be partially loaded
+                await page.goto(args.base_url, wait_until="domcontentloaded", timeout=30000)
+                await wait_for_active_requests_complete(page, timeout=20000)
+                print(f"   ✅ Page loaded (domcontentloaded) and active requests completed: {page.url}")
+            except Exception as e2:
+                print(f"   ⚠️  Navigation warning: {e2}")
+                print(f"   Current URL: {page.url}")
+                # Continue anyway - page might be partially loaded
 
-            # Check if we should run gateway
-            should_run_gateway = False
-            instructions = ""
+        # Check if we should run gateway
+        should_run_gateway = False
+        instructions = ""  # Will be set when reading instructions file
+        gateway_plan = None
 
+        # Try to load existing gateway plan first, but check if instructions have changed
+        if args.force_recompile_gateway and gateway_plan_path and gateway_plan_path.exists():
+            print(f"\n🔄 Force recompile flag set - removing existing gateway plan")
+            gateway_plan_path.unlink()
+            gateway_plan = None
+        
+        if gateway_plan_path and gateway_plan_path.exists():
+            # Check if instructions file exists and compare content hash
+            instructions_changed = False
             if args.gateway_instructions:
-                gateway_file = Path(args.gateway_instructions)
-                if gateway_file.exists():
-                    instructions = gateway_file.read_text().strip()
-                    if instructions:  # Only run gateway if file has content
-                        should_run_gateway = True
+                instructions_file = Path(args.gateway_instructions)
+                if instructions_file.exists():
+                    import hashlib
+                    # Read current instructions and normalize for consistent hashing
+                    current_instructions = instructions_file.read_text()
+                    normalized_instructions = "\n".join(line.strip() for line in current_instructions.strip().split("\n") if line.strip())
+                    current_hash = hashlib.md5(normalized_instructions.encode()).hexdigest()
+                    
+                    # Check if plan has stored hash
+                    try:
+                        plan_data = json.loads(gateway_plan_path.read_text())
+                        stored_hash = plan_data.get("instructions_hash")
+                        
+                        if stored_hash != current_hash:
+                            instructions_changed = True
+                            print(f"\n🔄 Gateway instructions have changed - will recompile")
+                            print(f"   Old hash: {stored_hash[:8] if stored_hash else 'none'}...")
+                            print(f"   New hash: {current_hash[:8]}...")
+                            print(f"   ⚠️  Hashes don't match - plan will be regenerated")
+                        else:
+                            # Double-check: count steps in instructions vs plan (more reliable than hash)
+                            import re
+                            numbered_steps = [line for line in current_instructions.split("\n") if re.match(r'^\s*\d+\.', line.strip())]
+                            expected_steps = len(numbered_steps)
+                            plan_steps = len(plan_data.get("steps", []))
+                            
+                            if expected_steps != plan_steps:
+                                print(f"\n🔄 Step count mismatch detected - forcing recompile")
+                                print(f"   Instructions have {expected_steps} numbered steps")
+                                print(f"   Plan has {plan_steps} steps")
+                                print(f"   Missing {expected_steps - plan_steps} step(s)")
+                                instructions_changed = True
+                            else:
+                                print(f"\n✅ Gateway plan matches current instructions")
+                                print(f"   Hash: {current_hash[:8]}...")
+                                print(f"   Steps: {expected_steps} (verified)")
+                    except Exception as e:
+                        # Plan doesn't have hash or is invalid - check modification time as fallback
+                        if instructions_file.stat().st_mtime > gateway_plan_path.stat().st_mtime:
+                            instructions_changed = True
+                            print(f"\n📄 Gateway instructions file is newer than plan - will recompile")
+            
+            if not instructions_changed:
+                try:
+                    print(f"\n📄 Loading existing gateway plan from: {gateway_plan_path}")
+                    gateway_plan = json.loads(gateway_plan_path.read_text())
+                    # Remove hash from plan before using (it's metadata)
+                    if "instructions_hash" in gateway_plan:
+                        del gateway_plan["instructions_hash"]
+                    print(f"✅ Gateway plan loaded successfully ({len(gateway_plan.get('steps', []))} steps)")
+                    should_run_gateway = True
+                except Exception as e:
+                    print(f"⚠️  Failed to load gateway plan: {e}")
+                    print("   Will compile new plan from instructions")
+            else:
+                # Instructions changed - delete old plan and recompile
+                print(f"\n🔄 Removing old plan and recompiling from updated instructions")
+                gateway_plan_path.unlink()
+                gateway_plan = None
 
-            if should_run_gateway:
+        # If no plan loaded, check for instructions to compile
+        # Always read instructions if provided (needed for compilation and hash checking)
+        if args.gateway_instructions:
+            gateway_file = Path(args.gateway_instructions)
+            if gateway_file.exists():
+                instructions = gateway_file.read_text().strip()
+                if instructions:  # Only run gateway if file has content
+                    should_run_gateway = True
+                else:
+                    print(f"⚠️  Gateway instructions file is empty: {gateway_file}")
+            else:
+                print(f"⚠️  Gateway instructions file not found: {gateway_file}")
+        elif not gateway_plan:
+            # No instructions and no plan - can't run gateway
+            print("ℹ️  No gateway instructions provided and no existing plan found")
+
+        if should_run_gateway:
                 print("\n" + "=" * 70)
                 print("🚪 GATEWAY EXECUTION")
                 print("=" * 70)
@@ -2553,48 +3536,93 @@ async def main():
                 snapshot = await collect_ui_snapshot(page)
                 print(f"✅ Snapshot collected: {len(snapshot.get('elements', []))} interactive elements found")
                 
-                print("\n🤖 Compiling gateway plan with LLM...")
-                prompt = build_gateway_compile_prompt(
-                    persona=args.persona,
-                    instructions=instructions,
-                    snapshot=snapshot,
-                    base_url=args.base_url,
-                    storage_state_path=str(storage_state_path),
-                )
+                if gateway_plan:
+                    # Use loaded plan
+                    plan = gateway_plan
+                    print(f"\n✅ Using loaded gateway plan ({len(plan.get('steps', []))} steps)")
+                else:
+                    # Compile new plan from instructions
+                    # Re-read instructions to ensure we have the latest version
+                    if args.gateway_instructions:
+                        gateway_file = Path(args.gateway_instructions)
+                        if gateway_file.exists():
+                            instructions = gateway_file.read_text().strip()
+                            print(f"\n📄 Reading instructions from: {gateway_file}")
+                            print(f"   Instructions length: {len(instructions)} characters")
+                            print(f"   Number of lines: {len(instructions.split(chr(10)))}")
+                            # Show last few lines to verify step 10 is included
+                            lines = instructions.split('\n')
+                            if len(lines) >= 2:
+                                print(f"   Last 2 lines: {lines[-2:]}")
+                    
+                    print("\n🤖 Compiling gateway plan with LLM...")
+                    prompt = build_gateway_compile_prompt(
+                        persona=args.persona,
+                        instructions=instructions,
+                        snapshot=snapshot,
+                        base_url=args.base_url,
+                        storage_state_path=str(storage_state_path) if storage_state_path else "",
+                    )
 
-                plan = await compile_gateway_plan(gateway_llm, prompt)
-                print("✅ Gateway plan compiled successfully")
-                print("\n=== COMPILED GATEWAY PLAN ===")
-                print(json.dumps(plan, indent=2))
+                    plan = await compile_gateway_plan(gateway_llm, prompt)
+                    print("✅ Gateway plan compiled successfully")
+                    
+                    # Validate that all steps were included
+                    instruction_lines = [line.strip() for line in instructions.strip().split("\n") if line.strip() and (line.strip()[0].isdigit() or line.strip().startswith("1.") or line.strip().startswith("2.") or line.strip().startswith("3.") or line.strip().startswith("4.") or line.strip().startswith("5.") or line.strip().startswith("6.") or line.strip().startswith("7.") or line.strip().startswith("8.") or line.strip().startswith("9.") or line.strip().startswith("10."))]
+                    # Count numbered steps (lines starting with number followed by period)
+                    import re
+                    numbered_steps = [line for line in instructions.split("\n") if re.match(r'^\s*\d+\.', line.strip())]
+                    expected_steps = len(numbered_steps)
+                    actual_steps = len(plan.get("steps", []))
+                    
+                    if expected_steps != actual_steps:
+                        print(f"\n⚠️  WARNING: Plan has {actual_steps} steps but instructions have {expected_steps} numbered steps!")
+                        print(f"   Expected steps: {expected_steps}")
+                        print(f"   Actual steps in plan: {actual_steps}")
+                        if expected_steps > actual_steps:
+                            print(f"   ⚠️  Missing {expected_steps - actual_steps} step(s) - the LLM may have skipped some steps")
+                            print(f"   Last instruction: {numbered_steps[-1] if numbered_steps else 'N/A'}")
+                    
+                    # Save compiled plan for future use with instructions hash
+                    if gateway_plan_path:
+                        # Store hash of instructions in plan for change detection
+                        import hashlib
+                        # Normalize instructions (strip whitespace, normalize line endings) for consistent hashing
+                        normalized_instructions = "\n".join(line.strip() for line in instructions.strip().split("\n") if line.strip())
+                        instructions_hash = hashlib.md5(normalized_instructions.encode()).hexdigest()
+                        plan["instructions_hash"] = instructions_hash
+                        
+                        print(f"\n💾 Saving gateway plan to: {gateway_plan_path}")
+                        gateway_plan_path.write_text(json.dumps(plan, indent=2))
+                        print(f"✅ Gateway plan saved (hash: {instructions_hash[:8]}...) - will auto-recompile if instructions change")
+                    
+                    print("\n=== COMPILED GATEWAY PLAN ===")
+                    print(json.dumps(plan, indent=2))
 
                 await execute_gateway_plan(page, plan)
-                print(f"\n✅ Gateway execution completed")
+                print(f"\n✅ Gateway execution completed (fresh authentication)")
                 
-                # Save storage state after gateway execution
-                print(f"\n💾 Saving storage state to: {storage_state_path} (for future reuse)")
-                await context.storage_state(path=str(storage_state_path))
-                print(f"✅ Storage state saved")
+                # Optionally save storage state (but don't rely on it)
+                if storage_state_path:
+                    print(f"\n💾 Saving storage state to: {storage_state_path} (optional, for reference only)")
+                    await context.storage_state(path=str(storage_state_path))
+                    print(f"✅ Storage state saved")
+        else:
+            print("\n" + "=" * 70)
+            print("⏭️  SKIPPING GATEWAY")
+            print("=" * 70)
+            print(f"📋 Persona: {args.persona}")
+            if not args.gateway_instructions:
+                print("ℹ️  No gateway instructions provided - starting directly from base URL")
             else:
-                print("\n" + "=" * 70)
-                print("⏭️  SKIPPING GATEWAY")
-                print("=" * 70)
-                print(f"📋 Persona: {args.persona}")
-                if not args.gateway_instructions:
-                    print("ℹ️  No gateway instructions provided - starting directly from base URL")
-                else:
-                    gateway_file = Path(args.gateway_instructions)
-                    if not gateway_file.exists():
-                        print(f"⚠️  Gateway file not found: {args.gateway_instructions}")
-                    elif not instructions:
-                        print(f"ℹ️  Gateway file is empty - starting directly from base URL")
-                print(f"🌐 Starting from: {page.url}")
-                
-                # Save storage state even if no gateway was run (for future reuse)
-                print(f"\n💾 Saving storage state to: {storage_state_path} (for future reuse)")
-                await context.storage_state(path=str(storage_state_path))
-                print(f"✅ Storage state saved")
-            
-            print(f"ℹ️  Continuing with same browser session (no context restart needed)")
+                gateway_file = Path(args.gateway_instructions)
+                if not gateway_file.exists():
+                    print(f"⚠️  Gateway file not found: {args.gateway_instructions}")
+                elif not instructions:
+                    print(f"ℹ️  Gateway file is empty - starting directly from base URL")
+            print(f"🌐 Starting from: {page.url}")
+        
+        print(f"ℹ️  Continuing with same browser session (no context restart needed)")
             
             # Keep using the same context and page - don't close/reopen!
             # The storage_state is saved for future runs, but we maintain the current session

@@ -30,6 +30,14 @@ try:
 except ImportError:
     HAS_PYGITHUB = False
 
+# Import agentic PR context gatherer (optional)
+try:
+    from agentic_pr_context import AgenticPRContextGatherer
+    from github_mcp_client import GitHubMCPClient
+    HAS_AGENTIC_CONTEXT = True
+except ImportError:
+    HAS_AGENTIC_CONTEXT = False
+
 # Import LLM from semantic_mapper
 import sys
 sys.path.append(os.path.dirname(__file__))
@@ -121,10 +129,22 @@ class OllamaChatModel:
 class ContextProcessor:
     """Processes task markdown and PR diff into structured mission."""
     
-    def __init__(self, graph_queries: GraphQueries, llm, ollama_llm=None):
+    def __init__(self, graph_queries: GraphQueries, llm, ollama_llm=None, use_agentic_context: bool = True):
         self.graph_queries = graph_queries
         self.llm = llm  # Main LLM for intent extraction
         self.ollama_llm = ollama_llm  # Optional Ollama for PR summary (faster, cheaper)
+        self.use_agentic_context = use_agentic_context and HAS_AGENTIC_CONTEXT
+        
+        # Initialize agentic context gatherer if enabled
+        self.agentic_gatherer = None
+        if self.use_agentic_context:
+            try:
+                github_client = GitHubMCPClient()
+                self.agentic_gatherer = AgenticPRContextGatherer(self.llm, github_client)
+                print("   ✅ Agentic PR context gathering enabled")
+            except Exception as e:
+                print(f"   ⚠️  Failed to initialize agentic context gatherer: {e}")
+                self.use_agentic_context = False
     
     def parse_task_markdown(self, task_file: str) -> Dict[str, str]:
         """Parse task.md to extract description and PR link.
@@ -299,8 +319,35 @@ class ContextProcessor:
             if not files:
                 return {}
             
+            # Use agentic context gathering if enabled
+            if self.use_agentic_context and self.agentic_gatherer:
+                print("   🤖 Using agentic PR context gathering...")
+                try:
+                    result = self.agentic_gatherer.gather_context(
+                        pr_link=pr_link,
+                        pr_diff=pr_data,
+                        task_description=task_description
+                    )
+                    # Merge enriched context with test scope
+                    enriched = result.get("enriched_context", {})
+                    test_scope = result.get("test_scope", {})
+                    
+                    # Return in format compatible with existing code
+                    return {
+                        "db_changes": enriched.get("db_changes", {"tables": [], "columns": []}),
+                        "api_changes": enriched.get("api_changes", []),
+                        "ui_changes": enriched.get("ui_changes", []),
+                        "files_changed": enriched.get("files_changed", len(files)),
+                        "pr_description": enriched.get("pr_description", {}),
+                        "full_files": enriched.get("full_files", {}),
+                        "test_scope": test_scope  # NEW: Include test scope decision
+                    }
+                except Exception as e:
+                    print(f"   ⚠️  Agentic context gathering failed: {e}, falling back to standard extraction")
+                    # Fall through to standard extraction
+            
             # Use LLM if available (Ollama preferred for speed/cost)
-            if self.ollama_llm:
+            if self.ollama_llm or self.llm:
                 return self._extract_pr_summary_with_llm(files, task_description)
             else:
                 # Fallback to simple file counting (non-semantic)
@@ -1057,7 +1104,7 @@ Respond with ONLY the JSON.
         return {"test_data": {}, "expected_values": {}, "test_cases": []}
     
     def synthesize_mission(self, task_data: Dict, intent: Dict, target_node: Dict, 
-                          pr_analysis: Dict) -> Dict[str, Any]:
+                          pr_analysis: Dict, test_scope: Optional[Dict[str, bool]] = None) -> Dict[str, Any]:
         """Synthesize all information into Mission JSON.
         
         Returns:
@@ -1200,7 +1247,9 @@ Respond with ONLY the JSON.
                 api_endpoint = triggers_api[0]
         
         # Build navigation steps
-        target_url = target_node.get("url", "http://localhost:5173") if target_node else "http://localhost:5173"
+        # Get base URL from project config or use default
+        base_url = os.getenv("PROJECT_BASE_URL", os.getenv("BASE_URL", "http://localhost:5173"))
+        target_url = target_node.get("url", base_url) if target_node else base_url
         # If it's a template URL, we can still use it - executor will resolve it
         navigation_steps = [target_url]
         
@@ -1229,6 +1278,15 @@ Respond with ONLY the JSON.
             if not case.get("test_data"):
                 case["test_data"] = test_data
         
+        # Default test scope: test everything if not provided
+        if test_scope is None:
+            test_scope = {
+                "test_db": True,
+                "test_api": True,
+                "test_ui": True,
+                "reasoning": "Default: test all layers"
+            }
+        
         mission = {
             "ticket_id": self._extract_ticket_id(task_data.get("description", "")),
             "target_node": target_node.get("id") or target_node.get("semantic_name") if target_node else "unknown",
@@ -1245,7 +1303,8 @@ Respond with ONLY the JSON.
                 "changes": intent.get("changes"),
                 "test_focus": intent.get("test_focus")
             },
-            "pr_link": task_data.get("pr_link")
+            "pr_link": task_data.get("pr_link"),
+            "test_scope": test_scope  # NEW: Agentic decision on what to test
         }
         
         return mission
@@ -1459,8 +1518,13 @@ def main():
     print()
     print("🎯 Step 5: Synthesizing mission...")
     try:
+        # Extract test_scope from pr_summary if available (from agentic context gathering)
+        test_scope = pr_summary.get("test_scope") if pr_summary else None
+        if test_scope:
+            print(f"   ✅ Test scope: DB={test_scope.get('test_db')}, API={test_scope.get('test_api')}, UI={test_scope.get('test_ui')}")
+        
         mission = processor.synthesize_mission(
-            task_data, intent, target_node, pr_analysis
+            task_data, intent, target_node, pr_analysis, test_scope=test_scope
         )
         
         # Save mission JSON (output_path already set in Step 1)

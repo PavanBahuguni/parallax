@@ -59,7 +59,8 @@ class TripleCheckExecutor:
         if env_file.exists():
             load_dotenv(env_file)
         
-        db_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres@localhost:5432/postgres")
+        # Prefer PROJECT_DATABASE_URL from project config, fallback to DATABASE_URL
+        db_url = os.getenv("PROJECT_DATABASE_URL") or os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres@localhost:5432/postgres")
         # Convert asyncpg URL to standard format
         if db_url.startswith("postgresql+asyncpg://"):
             db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
@@ -180,6 +181,8 @@ class TripleCheckExecutor:
             method = call.get("method", "").upper()
             
             # Extract path from URL (e.g., "http://localhost:8000/items" -> "/items")
+            # Get API base from project config
+            api_base = os.getenv("PROJECT_API_BASE", os.getenv("API_BASE", "http://localhost:8000"))
             try:
                 from urllib.parse import urlparse, parse_qs
                 parsed = urlparse(url)
@@ -318,48 +321,76 @@ class TripleCheckExecutor:
                 # Triple-Check Verification (Deterministic)
                 console.print("[bold cyan]🔍 TRIPLE-CHECK VERIFICATION[/bold cyan]\n")
                 
+                # Get test scope from mission (agentic decision)
+                test_scope = self.mission.get("test_scope", {
+                    "test_db": True,
+                    "test_api": True,
+                    "test_ui": True
+                })
+                
                 verification = self.mission.get("verification_points", {})
                 expected_values = verification.get("expected_values", {})
                 api_endpoint = verification.get("api_endpoint", "")
                 db_table = verification.get("db_table", "items")
                 
-                # 1. Database Check (Deterministic)
-                console.print("[bold]1️⃣ Database Verification[/bold]")
-                db_success, db_result = await self.verify_database(expected_values, db_table=db_table)
-                results["triple_check"]["database"] = {
-                    "success": db_success,
-                    "details": db_result
-                }
+                # 1. Database Check (Deterministic) - Skip if test_scope says no
+                if test_scope.get("test_db", True):
+                    console.print("[bold]1️⃣ Database Verification[/bold]")
+                    db_success, db_result = await self.verify_database(expected_values, db_table=db_table)
+                    results["triple_check"]["database"] = {
+                        "success": db_success,
+                        "details": db_result
+                    }
+                else:
+                    console.print("[bold]1️⃣ Database Verification[/bold] [dim](Skipped - not in test scope)[/dim]")
+                    results["triple_check"]["database"] = {
+                        "success": True,
+                        "details": {"skipped": True, "reason": test_scope.get("reasoning", "Not in test scope")}
+                    }
                 console.print()
                 
-                # 2. API Check (Deterministic)
-                console.print("[bold]2️⃣ API Verification[/bold]")
-                # Check if any scenario requires API verification with filter
-                filter_param = None
-                for scenario in self.mission.get("test_cases", []):
-                    verification_req = scenario.get("verification", {})
-                    if verification_req.get("api") and "filter" in verification_req.get("api", "").lower():
-                        # Try to extract filter parameter from scenario
-                        scenario_id = scenario.get("id", "")
-                        if "filter" in scenario_id:
-                            # Use test_data directly from the scenario
-                            test_data = scenario.get("test_data", {})
-                            filter_param = list(test_data.keys())[0] if test_data else None
-                            break
-                
-                api_success, api_result = await self.verify_api(page, api_endpoint, filter_param=filter_param)
-                results["triple_check"]["api"] = {
-                    "success": api_success,
-                    "details": api_result
-                }
+                # 2. API Check (Deterministic) - Skip if test_scope says no
+                if test_scope.get("test_api", True):
+                    console.print("[bold]2️⃣ API Verification[/bold]")
+                    # Check if any scenario requires API verification with filter
+                    filter_param = None
+                    for scenario in self.mission.get("test_cases", []):
+                        verification_req = scenario.get("verification", {})
+                        if verification_req.get("api") and "filter" in verification_req.get("api", "").lower():
+                            # Try to extract filter parameter from scenario
+                            scenario_id = scenario.get("id", "")
+                            if "filter" in scenario_id:
+                                # Use test_data directly from the scenario
+                                test_data = scenario.get("test_data", {})
+                                filter_param = list(test_data.keys())[0] if test_data else None
+                                break
+                    
+                    api_success, api_result = await self.verify_api(page, api_endpoint, filter_param=filter_param)
+                    results["triple_check"]["api"] = {
+                        "success": api_success,
+                        "details": api_result
+                    }
+                else:
+                    console.print("[bold]2️⃣ API Verification[/bold] [dim](Skipped - not in test scope)[/dim]")
+                    results["triple_check"]["api"] = {
+                        "success": True,
+                        "details": {"skipped": True, "reason": test_scope.get("reasoning", "Not in test scope")}
+                    }
                 console.print()
                 
-                # 3. UI Check - Use results from agentic execution
-                console.print("[bold]3️⃣ UI Verification[/bold]")
-                results["triple_check"]["ui"] = {
-                    "success": ui_success,
-                    "details": results.get("scenario_results", {})
-                }
+                # 3. UI Check - Use results from agentic execution - Skip if test_scope says no
+                if test_scope.get("test_ui", True):
+                    console.print("[bold]3️⃣ UI Verification[/bold]")
+                    results["triple_check"]["ui"] = {
+                        "success": ui_success,
+                        "details": results.get("scenario_results", {})
+                    }
+                else:
+                    console.print("[bold]3️⃣ UI Verification[/bold] [dim](Skipped - not in test scope)[/dim]")
+                    results["triple_check"]["ui"] = {
+                        "success": True,
+                        "details": {"skipped": True, "reason": test_scope.get("reasoning", "Not in test scope")}
+                    }
                 console.print()
                 
                 # Map triple-check results to scenarios

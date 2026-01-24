@@ -72,10 +72,123 @@ export const api = {
   },
 
   // Semantic Graph
-  getSemanticGraph: async (): Promise<any> => {
-    const response = await client.get('/semantic-graph')
+  getSemanticGraph: async (persona?: string, projectId?: string): Promise<any> => {
+    const params = new URLSearchParams()
+    if (persona) params.append('persona', persona)
+    if (projectId) params.append('project_id', projectId)
+    const queryString = params.toString()
+    const url = `/semantic-graph${queryString ? `?${queryString}` : ''}`
+    const response = await client.get(url)
     return response.data
   },
+
+  // Projects
+  getProjects: async (): Promise<Project[]> => {
+    const response = await client.get('/api/projects')
+    return response.data
+  },
+
+  getProject: async (projectId: string): Promise<Project> => {
+    const response = await client.get(`/api/projects/${projectId}`)
+    return response.data
+  },
+
+  createProject: async (data: ProjectCreate): Promise<Project> => {
+    const response = await client.post('/api/projects', data)
+    return response.data
+  },
+
+  updateProject: async (projectId: string, data: ProjectUpdate): Promise<Project> => {
+    const response = await client.put(`/api/projects/${projectId}`, data)
+    return response.data
+  },
+
+  deleteProject: async (projectId: string): Promise<void> => {
+    await client.delete(`/api/projects/${projectId}`)
+  },
+
+  getProjectTasks: async (projectId: string): Promise<Task[]> => {
+    const response = await client.get(`/api/projects/${projectId}/tasks`)
+    return response.data
+  },
+
+  regenerateSemanticMaps: async (projectId: string, headless: boolean = true): Promise<{ execution_id: string; message: string; personas: string[] }> => {
+    const response = await client.post(`/api/projects/${projectId}/regenerate-semantic-maps`, {
+      headless
+    })
+    return response.data
+  },
+
+  // Task CRUD (for future Jira integration)
+  createTask: async (data: TaskCreate): Promise<Task> => {
+    const response = await client.post('/api/tasks', data)
+    return response.data
+  },
+
+  updateTask: async (taskId: string, data: TaskUpdate): Promise<Task> => {
+    const response = await client.put(`/api/tasks/${taskId}`, data)
+    return response.data
+  },
+
+  deleteTask: async (taskId: string): Promise<void> => {
+    await client.delete(`/api/tasks/${taskId}`)
+  },
+}
+
+export interface TaskCreate {
+  project_id: string
+  title: string
+  description: string
+  pr_link?: string
+  file_path?: string
+}
+
+export interface TaskUpdate {
+  title?: string
+  description?: string
+  pr_link?: string
+  file_path?: string
+}
+
+export interface Persona {
+  name: string
+  gateway_instructions: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  description?: string
+  ui_url: string
+  api_base_url?: string
+  openapi_url?: string
+  database_url?: string
+  backend_path?: string
+  personas: Persona[]
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ProjectCreate {
+  name: string
+  description?: string
+  ui_url: string
+  api_base_url?: string
+  openapi_url?: string
+  database_url?: string
+  backend_path?: string
+  personas?: Persona[]
+}
+
+export interface ProjectUpdate {
+  name?: string
+  description?: string
+  ui_url?: string
+  api_base_url?: string
+  openapi_url?: string
+  database_url?: string
+  backend_path?: string
+  personas?: Persona[]
 }
 
 export default client

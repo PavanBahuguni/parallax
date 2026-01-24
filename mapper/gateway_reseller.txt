@@ -1,4 +1,3 @@
-
 1. Click on "Log In With My Nutanix" button
 2. Wait for SSO page to load (URL should contain stage-my.nutanix.com)
 3. Fill username field with env(LOGIN_USERNAME)
@@ -6,5 +5,9 @@
 5. Wait for password screen to load
 6. Fill password field with env(LOGIN_PASSWORD)
 7. Click login/submit button
-8. Wait for redirect back to original application (URL should contain https://partner-dev.saas.nutanix.com or the original app domain)
+8. Wait for redirect back to original application (URL should contain http://localhost:9000 or the original app domain)
 9. Wait for text "Partner Central" to be visible on the page
+10. In view-as-partner-input type CDW
+11. wait for load div with class view-as-partner-popup, and click on div exactly having "CDW" from that
+12. wait for load div with class view-as-select-contact-popup, and click on div having "Aaron Ferraro"
+12. Wait for page reloads and url is http://localhost:9000

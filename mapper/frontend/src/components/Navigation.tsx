@@ -15,13 +15,19 @@ function Navigation() {
             to="/"
             className={location.pathname === '/' ? 'active' : ''}
           >
-            Tasks
+            Projects
           </Link>
           <Link
             to="/executions"
             className={location.pathname === '/executions' ? 'active' : ''}
           >
             Executions
+          </Link>
+          <Link
+            to="/graph"
+            className={location.pathname === '/graph' ? 'active' : ''}
+          >
+            Graph
           </Link>
         </div>
       </div>

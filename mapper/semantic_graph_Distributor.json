@@ -1,12 +1,12 @@
 {
   "nodes": [
     {
-      "id": "partner_dashboard",
+      "id": "partner_home",
       "url": "http://localhost:9000/",
-      "semantic_name": "partner_dashboard",
+      "semantic_name": "partner_home",
       "title": "Partner Central",
       "display_header": "Partner Central",
-      "description": "The Partner Central home page presents a collection of headline sections that highlight the latest partner\u2011focused news, product announcements, program updates, and marketing resources. Its primary purpose is to give resellers a quick overview of current initiatives and insights they can leverage, with each banner or title linking to deeper content such as program details, product releases, and marketing guidance. The visible layout is organized around prominent headers\u2014e.g., partner collaborations, new product availability, and upcoming partner programs\u2014serving as entry points to more detailed information.",
+      "description": "The Partner Central homepage presents a collection of headline sections that highlight the latest partner\u2011focused news, product announcements, and program updates, such as joint messaging with Cisco, Pure Storage, and Nutanix, marketing insights, new product availability, and the upcoming FY26 Elevate Partner Program. Its primary purpose is to give distributors a quick, centralized view of current initiatives and resources that drive the hybrid\u2011cloud and partner ecosystem. The page is organized into distinct banner\u2011style blocks for each announcement, providing easy navigation to deeper content without any tables or forms.",
       "headers": [
         "Cisco, Pure Storage, and Nutanix: Stronger Together",
         "Introducing Marketing Insights",
@@ -50,7 +50,7 @@
         {
           "type": "button",
           "role": "button_announcements",
-          "selector": "button#tab-item-id-prefix-27-1",
+          "selector": "button#tab-item-id-prefix-52-1",
           "text": "Announcements",
           "stable_text": "Announcements",
           "triggers_api": [],
@@ -257,7 +257,7 @@
         {
           "type": "button",
           "role": "button_25",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -266,7 +266,7 @@
         {
           "type": "button",
           "role": "button_26",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -284,7 +284,7 @@
         {
           "type": "button",
           "role": "button_28",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -293,6 +293,15 @@
         {
           "type": "button",
           "role": "button_29",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_30",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -310,7 +319,7 @@
         },
         {
           "type": "button",
-          "role": "button_31",
+          "role": "button_32",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -328,8 +337,8 @@
         },
         {
           "type": "button",
-          "role": "button_33",
-          "selector": "button:nth-of-type(34)",
+          "role": "button_34",
+          "selector": "button:nth-of-type(35)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -337,8 +346,8 @@
         },
         {
           "type": "button",
-          "role": "button_34",
-          "selector": "button:nth-of-type(35)",
+          "role": "button_35",
+          "selector": "button:nth-of-type(36)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -400,7 +409,7 @@
         },
         {
           "type": "button",
-          "role": "button_41",
+          "role": "button_42",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -418,8 +427,8 @@
         },
         {
           "type": "button",
-          "role": "button_43",
-          "selector": "button:nth-of-type(44)",
+          "role": "button_44",
+          "selector": "button:nth-of-type(45)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -498,7 +507,7 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -514,7 +523,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -530,7 +539,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -546,7 +555,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -562,7 +571,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -578,7 +587,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -594,7 +603,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -610,7 +619,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -626,7 +635,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -642,7 +651,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -658,7 +667,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -674,7 +683,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -690,7 +699,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -706,7 +715,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -722,7 +731,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -738,7 +747,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -754,7 +763,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -770,7 +779,7 @@
       "components": [],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -778,8 +787,8 @@
       "url": "http://localhost:9000/sales",
       "semantic_name": "",
       "title": "Partner Central",
-      "display_header": "Partner Central",
-      "description": "The page is a dashboard\u2011style hub within the Partner Central portal that presents an overview of Nutanix sales enablement resources. Its primary purpose is to give partners quick access to content libraries, sales tools, and guidance on Nutanix\u2019s defined sales stages, helping them manage and accelerate opportunities. Key visible sections include navigation links such as Content Library, Sales Resources, Test Drive Partner Center, and informational blocks that describe how to use the sales stages and related forecasting categories.",
+      "display_header": "Sales Resources",
+      "description": "The\u202fSales page in Partner Central presents an overview of Nutanix\u2019s enablement and sales resources, organized under headings such as Content Library, Sales Resources, and Test\u2011Drive Partner Center. Its primary purpose is to give distributors quick access to tools, documentation, and guidance that support the sales process and help move opportunities through Nutanix\u2019s defined sales stages. Key visible sections include a brief description of the resource hub, a call\u2011to\u2011action for growing and closing business, and an explanation of the sales\u2011stage framework used for forecasting.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Content Library",
@@ -986,7 +995,7 @@
         {
           "type": "button",
           "role": "button_16",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -995,7 +1004,7 @@
         {
           "type": "button",
           "role": "button_17",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1013,7 +1022,7 @@
         {
           "type": "button",
           "role": "button_19",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1022,6 +1031,15 @@
         {
           "type": "button",
           "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -1057,7 +1075,7 @@
         },
         {
           "type": "button",
-          "role": "button_24",
+          "role": "button_25",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1075,8 +1093,8 @@
         },
         {
           "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
+          "role": "button_27",
+          "selector": "button:nth-of-type(28)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1084,8 +1102,8 @@
         },
         {
           "type": "button",
-          "role": "button_27",
-          "selector": "button:nth-of-type(28)",
+          "role": "button_28",
+          "selector": "button:nth-of-type(29)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1147,7 +1165,7 @@
         },
         {
           "type": "button",
-          "role": "button_34",
+          "role": "button_35",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1165,8 +1183,8 @@
         },
         {
           "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
+          "role": "button_37",
+          "selector": "button:nth-of-type(38)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1280,7 +1298,7 @@
         },
         {
           "type": "list",
-          "role": "the_snippet_you_posted_creates_an_**unordered_list**_(`<ul>`)_that_contains_a_**single_list_item**_(`<li>`)_with_an_**anchor_element**_(`<a>`)._because_the_`<a>`_tag_has_no_`href`_attribute_and_there\u2019s_no_text_(or_other_content)_inside_it,_the_browser_will_render_essentially:\n\n-_a_bullet_point_(the_list\u2011item_marker)__\n-_an_empty,_clickable_area_where_the_link_would_be,_but_with_**no_visible_text**.\n\nso,_on_the_page_you\u2019d_see_just_a_bullet_with_nothing_next_to_it\u2014effectively_an_empty_list_entry._if_any_css_styles_are_applied_(e.g.,_background_images,_icons,_or_pseudo\u2011elements),_those_could_make_the_empty_link_visible,_but_with_plain_html_as_shown,_the_list_appears_blank_except_for_the_bullet.",
+          "role": "the_snippet_you_posted_is_the_start_of_a_**bulleted_(unordered)_list**_whose_items_are_meant_to_be_**hyperlinks**._in_html,_the_pattern\n\n```html\n<ul>\n__<li><a_href=\"\u2026\">link_text</a></li>\n__\u2026\n</ul>\n```\n\nproduces_a_vertical_list_of_bullet_points,_each_bullet_containing_a_clickable_link.\n\nbecause_the_fragment_you_gave_stops_at_`<ul><li><a>`\u2014with_no_closing_tags,_no_`href`_attribute,_and_no_link_text\u2014the_browser_would_render_**nothing_visible**_(or_just_an_empty_bullet)_until_the_element_is_completed._in_a_fully\u2011filled_version,_each_`<li>`_would_hold_an_`<a>`_element_that:\n\n*_**displays_the_link_text**_(the_part_between_`<a>`_and_`</a>`),_e.g.,_\u201corders\u201d,_\u201cinventory\u201d,_\u201creports\u201d,_etc.\n*_**acts_as_a_navigation_control**\u2014clicking_it_would_take_the_user_to_the_url_specified_in_the_`href`_attribute.\n\nso,_in_the_context_of_the_\u201cdistributor\u201d_persona_mapping_the_app,_that_list_is_likely_intended_to_show_a_set_of_navigation_links_(or_perhaps_a_list_of_items_such_as_distributors,_products,_or_orders)_that_the_distributor_can_click_on_to_move_to_the_corresponding_screen_or_view._until_the_`<a>`_tag_is_completed_with_a_url_and_visible_text,_the_list_will_appear_empty.",
           "selector": "ul:nth-of-type(3)",
           "item_count": 12,
           "triggers_api": [],
@@ -1288,7 +1306,7 @@
         },
         {
           "type": "list",
-          "role": "the_snippet_you_posted_is_**malformed_html**_\u2013_a_`<ul>`_(unordered_list)_is_supposed_to_contain_one_or_more_`<li>`_(list\u2011item)_elements,_not_a_`<div>`_directly.__\n\n###_what_the_browser_will_actually_do\n\n|_browser_behavior_|_result_on_the_page_|\n|------------------|--------------------|\n|_**most_modern_browsers**_will_try_to_\u201cfix\u201d_the_markup_automatically._they_will_treat_the_`<div>`_as_if_it_were_a_list_item,_moving_it_into_an_implicit_`<li>`_or_pulling_it_out_of_the_`<ul>`_entirely._|_\u2022_if_the_`<div>`_contains_content,_that_content_will_appear_**inside_the_list**,_but_**without_a_bullet**_(because_there\u2019s_no_explicit_`<li>`)._<br>\u2022_if_the_`<div>`_is_empty,_the_list_will_render_**nothing_visible**_(an_empty_list)._|\n|_**strict_html_validators**_will_flag_this_as_an_error:_*\u201c`<ul>`_may_only_contain_`<li>`_elements.\u201d*_|_the_page_will_still_render,_but_the_markup_is_considered_invalid_and_could_cause_unpredictable_styling_or_scripting_issues._|\n\n###_bottom_line\n\n-_**if_the_`<div>`_has_text_or_other_elements_inside_it**,_you\u2019ll_see_that_content_rendered_on_the_page,_but_it_won\u2019t_get_the_usual_bullet_marker_that_`<li>`_items_get.__\n-_**if_the_`<div>`_is_empty**,_the_`<ul>`_will_appear_empty_(no_visible_bullets,_no_height).__\n\n###_how_to_make_it_behave_as_a_proper_list\n\n```html\n<ul>\n____<li>\n________<div>\n____________<!--_your_content_here_-->\n________</div>\n____</li>\n____<!--_repeat_<li>_as_needed_-->\n</ul>\n```\n\nwrapping_the_`<div>`_(or_any_other_markup)_inside_an_`<li>`_restores_the_expected_list_semantics,_bullet_styling,_and_accessibility_support.__\n\n---\n\n**in_the_context_of_your_\u201creseller\u201d_persona_while_mapping_the_app:**__\nif_you\u2019re_looking_at_a_component_that_currently_shows_`<ul><div>\u2026</div></ul>`,_you\u2019re_probably_seeing_a_**broken_list**_that_either_shows_the_inner_content_without_bullets_or_appears_empty._fixing_it_to_use_`<li>`_will_make_the_ui_clearer_for_both_end\u2011users_and_any_automated_tools_(e.g.,_screen_readers,_seo_crawlers)_that_rely_on_proper_list_markup.",
+          "role": "the_markup_you\u2019ve_shown_isn\u2019t_actually_a_valid_list_at_all.__\n\n```html\n<ul>\n__<div>\n</ul>\n```\n\n*_**what_a_proper_`<ul>`_expects**_\u2013_an_unordered_list_should_contain_only_`<li>`_elements_(or_script\u2011supporting/template_elements).__\n*_**what_you_have**_\u2013_a_`<div>`_placed_directly_inside_the_`<ul>`._because_`<div>`_isn\u2019t_allowed_as_a_child_of_`<ul>`,_the_html_is_**invalid**.\n\n###_how_browsers_handle_it\n\n1._**no_`<li>`_\u2192_no_bullet_points**__\n___since_there_are_no_`<li>`_elements,_the_browser_won\u2019t_render_any_list_markers_(the_typical_\u201c\u2022\u201d_bullets).\n\n2._**the_`<div>`_content_still_shows_up**__\n___the_browser_will_still_render_whatever_is_inside_that_`<div>`,_but_it_will_be_treated_as_normal_block\u2011level_content,_**outside**_the_list_context._in_many_browsers_the_`<div>`_is_automatically_\u201cre\u2011parented\u201d_to_sit_**after**_the_`<ul>`,_effectively_breaking_the_list.\n\n3._**resulting_visual_output**__\n___-_an_empty_unordered_list_(nothing_visible,_no_spacing_or_bullets).__\n___-_the_`<div>`\u2019s_content_appears_on_the_page_as_a_regular_block_element,_not_as_a_list_item.\n\n###_bottom_line\n\n**the_list_displays_nothing**\u2014there_are_no_list_items_to_show._any_text_or_elements_you_place_inside_that_`<div>`_will_appear_on_the_page,_but_they_won\u2019t_be_part_of_the_list_and_won\u2019t_get_bullet_points_or_list_styling._to_make_the_list_actually_show_items,_replace_the_`<div>`_with_one_or_more_`<li>`_elements,_e.g.:\n\n```html\n<ul>\n__<li>first_item</li>\n__<li>second_item</li>\n</ul>\n```\n\nthat_will_give_you_a_proper_unordered_list_with_visible_bullets.",
           "selector": "ul:nth-of-type(4)",
           "item_count": 4,
           "triggers_api": [],
@@ -1297,7 +1315,7 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -1306,7 +1324,7 @@
       "semantic_name": "renewals_resources",
       "title": "Partner Central",
       "display_header": "Renewals Resources",
-      "description": "The Renewals page in Partner Central presents an overview of enablement and sales resources that partners can use to drive Nutanix business growth, emphasizing tools and guidance for selling more efficiently. Its primary function is to serve as a hub where resellers can access materials, best\u2011practice content, and information about Nutanix\u2019s defined sales stages, probabilities, and forecast categories. Key visible sections include the header navigation (Content Library, Renewals Resources, Partner Central, View As) and a central content block describing the purpose of the resources and the sales\u2011stage framework.",
+      "description": "The Renewals page in Partner Central presents a high\u2011level overview of enablement and sales resources that partners can use to drive Nutanix business growth. Its primary function is to give distributors quick access to tools, documentation, and guidance\u2014organized around the defined Nutanix sales stages and forecasting categories\u2014to help them manage and close renewal opportunities more efficiently. Key visible sections include a header with navigation links (Content Library, Renewals Resources, View As) and a central content block describing the purpose of the resources and the sales\u2011stage framework.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Content Library",
@@ -1470,7 +1488,7 @@
         {
           "type": "button",
           "role": "button_16",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1479,7 +1497,7 @@
         {
           "type": "button",
           "role": "button_17",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1497,7 +1515,7 @@
         {
           "type": "button",
           "role": "button_19",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1506,6 +1524,15 @@
         {
           "type": "button",
           "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -1541,7 +1568,7 @@
         },
         {
           "type": "button",
-          "role": "button_24",
+          "role": "button_25",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1559,8 +1586,8 @@
         },
         {
           "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
+          "role": "button_27",
+          "selector": "button:nth-of-type(28)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1568,8 +1595,8 @@
         },
         {
           "type": "button",
-          "role": "button_27",
-          "selector": "button:nth-of-type(28)",
+          "role": "button_28",
+          "selector": "button:nth-of-type(29)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1631,7 +1658,7 @@
         },
         {
           "type": "button",
-          "role": "button_34",
+          "role": "button_35",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1649,8 +1676,8 @@
         },
         {
           "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
+          "role": "button_37",
+          "selector": "button:nth-of-type(38)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1729,7 +1756,7 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
@@ -1737,19 +1764,36 @@
       "url": "http://localhost:9000/programs",
       "semantic_name": "partner_programs",
       "title": "Partner Central",
-      "display_header": "Partner Programs",
-      "description": "The **Programs** page in Partner Central presents an overview of the Nutanix Elevate Partner Program, highlighting the enablement and sales resources available to partners. Its primary purpose is to inform and guide partners on how to maximize their benefits, rewards, and program requirements. The page is organized into key sections that describe the program\u2019s benefits, eligibility criteria, and links to the full library of resources and documentation.",
+      "display_header": "Elevate Distributor Program",
+      "description": "The\u202fPrograms page in Partner Central presents an overview of Nutanix\u2019s Elevate Partner and Elevate Distributor programs, highlighting the available enablement and sales resources. Its primary purpose is to inform distributors about the program\u2019s requirements, benefits, and rewards, and to guide them toward maximizing those advantages. The page is organized into key sections that introduce the resource library, outline how to leverage the program, and provide links to detailed information on eligibility, benefits, and supporting materials.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Content Library",
         "Elevate Partner Program",
+        "Elevate Distributor Program",
         "Partner Central",
         "View As",
+        "Program Guide",
+        "Program Status",
+        "Channel-Led Selling",
+        "Nutanix Price Books",
+        "Learn Frontline",
+        "Operations Portal",
+        "Operations Portal Video",
+        "Software @ Scale",
+        "Quick Overview",
         "Elevate Reseller Program",
         "Program Guide",
         "Program Status",
         "Services Portal",
-        "Quick Overview"
+        "Quick Overview",
+        "Elevate Service Provider Program",
+        "Program Guide",
+        "Program Status",
+        "Elevate Service Provider Aggregator Program",
+        "Program Guide",
+        "Aggregator FAQ",
+        "Quote Request Template"
       ],
       "primary_entity": "Program",
       "components": [
@@ -1900,7 +1944,7 @@
         {
           "type": "button",
           "role": "button_16",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1909,7 +1953,7 @@
         {
           "type": "button",
           "role": "button_17",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1927,7 +1971,7 @@
         {
           "type": "button",
           "role": "button_19",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1936,6 +1980,15 @@
         {
           "type": "button",
           "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -1953,6 +2006,15 @@
         },
         {
           "type": "button",
+          "role": "button_reseller_data",
+          "selector": "button.ntnx",
+          "text": "Reseller Data",
+          "stable_text": "Reseller Data",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
           "role": "button_feedback",
           "selector": "button.feedback-button",
           "text": "Feedback",
@@ -1962,7 +2024,7 @@
         },
         {
           "type": "button",
-          "role": "button_23",
+          "role": "button_25",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1980,8 +2042,8 @@
         },
         {
           "type": "button",
-          "role": "button_25",
-          "selector": "button:nth-of-type(26)",
+          "role": "button_27",
+          "selector": "button:nth-of-type(28)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -1989,8 +2051,8 @@
         },
         {
           "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
+          "role": "button_28",
+          "selector": "button:nth-of-type(29)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2052,7 +2114,7 @@
         },
         {
           "type": "button",
-          "role": "button_33",
+          "role": "button_35",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -2070,8 +2132,8 @@
         },
         {
           "type": "button",
-          "role": "button_35",
-          "selector": "button:nth-of-type(36)",
+          "role": "button_37",
+          "selector": "button:nth-of-type(38)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2141,7 +2203,7 @@
         },
         {
           "type": "list",
-          "role": "checkbox_list",
+          "role": "category_filter_list",
           "selector": "ul:nth-of-type(2)",
           "item_count": 1,
           "triggers_api": [],
@@ -2150,16 +2212,16 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
-      "id": "partner_learning_center",
+      "id": "partner_learning",
       "url": "http://localhost:9000/learn",
-      "semantic_name": "partner_learning_center",
+      "semantic_name": "partner_learning",
       "title": "Partner Central",
-      "display_header": "Partner Learning Center",
-      "description": "The\u202fLearn page within Partner Central presents a centralized hub of enablement and sales resources for Nutanix partners, featuring sections that highlight training programs, certification pathways, and up\u2011to\u2011date product information. Its primary purpose is to give partners quick access to educational content and tools that help them master Nutanix cloud and hyper\u2011converged solutions for customer engagements. Key visible elements include the page header with navigation links (Content Library, Learn, Partner Central, View As) and a concise overview of the available learning and certification offerings.",
+      "display_header": "Partner Learning",
+      "description": "The\u202fLearn page within Partner Central presents a centralized hub of enablement and sales resources for Nutanix partners, featuring sections that highlight training programs, certification pathways, and up\u2011to\u2011date product information. Its primary purpose is to give partners quick access to educational content and tools that help them master Nutanix\u2019s cloud\u2011infrastructure and hyper\u2011converged solutions. Key visible elements include a header navigation bar (Content Library, Learn, Partner Central, View As) and concise messaging that promotes the availability of training, certifications, and the latest Nutanix updates.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Content Library",
@@ -2170,8 +2232,6 @@
         "Sales Certifications",
         "Others",
         "Technical Certifications",
-        "Others",
-        "Services Certifications",
         "Others",
         "News and Updates",
         "News and Updates",
@@ -2345,7 +2405,7 @@
         {
           "type": "button",
           "role": "button_16",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2354,7 +2414,7 @@
         {
           "type": "button",
           "role": "button_17",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2372,7 +2432,7 @@
         {
           "type": "button",
           "role": "button_19",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2381,6 +2441,15 @@
         {
           "type": "button",
           "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -2416,7 +2485,7 @@
         },
         {
           "type": "button",
-          "role": "button_24",
+          "role": "button_25",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -2434,8 +2503,8 @@
         },
         {
           "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
+          "role": "button_27",
+          "selector": "button:nth-of-type(28)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2443,8 +2512,8 @@
         },
         {
           "type": "button",
-          "role": "button_27",
-          "selector": "button:nth-of-type(28)",
+          "role": "button_28",
+          "selector": "button:nth-of-type(29)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2506,7 +2575,7 @@
         },
         {
           "type": "button",
-          "role": "button_34",
+          "role": "button_35",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -2524,8 +2593,8 @@
         },
         {
           "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
+          "role": "button_37",
+          "selector": "button:nth-of-type(38)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2604,16 +2673,16 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     },
     {
-      "id": "partner_marketing_hub",
+      "id": "partner_marketing_center",
       "url": "http://localhost:9000/marketing",
-      "semantic_name": "partner_marketing_hub",
+      "semantic_name": "partner_marketing_center",
       "title": "Partner Central",
       "display_header": "Partner Central",
-      "description": "The **Partner Central \u2013 Marketing** page presents a hub of enablement and sales resources for Nutanix partners, organized under headings such as Content Library, Supercharge Your Marketing, and Test Drive Partner Center. Its primary purpose is to give partners quick access to ready\u2011to\u2011use marketing collateral, co\u2011branded programs, and personalized Test\u2011Drive links that prospects can use to explore Nutanix solutions. Key visible sections include a showcase of digital\u2011first demand\u2011generation tools, a library of downloadable assets, and a dedicated area for generating and sharing unique Test\u2011Drive Partner Center URLs.",
+      "description": "The **Partner Central \u2013 Marketing** page presents an overview of Nutanix\u2019s enablement and sales resources that partners can use to drive demand. Its primary function is to give partners quick access to ready\u2011to\u2011use marketing assets, co\u2011branded programs, and personalized Test Drive Partner Center (TDPC) links that prospects can use to experience Nutanix solutions. Key visible sections include a content library banner, a \u201cSupercharge Your Marketing\u201d call\u2011to\u2011action, and a description of how partners can share collateral and TDPC links to nurture customers.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Content Library",
@@ -2787,7 +2856,7 @@
         {
           "type": "button",
           "role": "button_16",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2796,7 +2865,7 @@
         {
           "type": "button",
           "role": "button_17",
-          "selector": "button.up-down-icon-wrapper",
+          "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2814,7 +2883,7 @@
         {
           "type": "button",
           "role": "button_19",
-          "selector": "button.ntnx",
+          "selector": "button.up-down-icon-wrapper",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -2823,6 +2892,15 @@
         {
           "type": "button",
           "role": "button_20",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
@@ -2858,7 +2936,7 @@
         },
         {
           "type": "button",
-          "role": "button_24",
+          "role": "button_25",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -2871,15 +2949,6 @@
           "selector": "button#accept-recommended-btn-handler",
           "text": "Allow All",
           "stable_text": "Allow All",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
-          "text": "",
-          "stable_text": "",
           "triggers_api": [],
           "impacts_db": null
         },
@@ -2894,6 +2963,15 @@
         },
         {
           "type": "button",
+          "role": "button_28",
+          "selector": "button:nth-of-type(29)",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
           "role": "button_back_button",
           "selector": "button.ot-link-btn",
           "text": "Back Button",
@@ -2948,7 +3026,7 @@
         },
         {
           "type": "button",
-          "role": "button_34",
+          "role": "button_35",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -2966,8 +3044,8 @@
         },
         {
           "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
+          "role": "button_37",
+          "selector": "button:nth-of-type(38)",
           "text": "",
           "stable_text": "",
           "triggers_api": [],
@@ -3029,7 +3107,7 @@
         },
         {
           "type": "list",
-          "role": "category_filter_list",
+          "role": "checkbox_list",
           "selector": "ul:nth-of-type(1)",
           "item_count": 1,
           "triggers_api": [],
@@ -3037,7 +3115,7 @@
         },
         {
           "type": "list",
-          "role": "checkbox_list",
+          "role": "category_filter",
           "selector": "ul:nth-of-type(2)",
           "item_count": 1,
           "triggers_api": [],
@@ -3046,13 +3124,13 @@
       ],
       "active_apis": [],
       "context": {
-        "persona": "Reseller"
+        "persona": "Distributor"
       }
     }
   ],
   "edges": [
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_www_nutanix_com_d9a2d2a1",
       "action": "navigate",
       "link_text": "Terms of Use",
@@ -3061,7 +3139,7 @@
       "description": "External link: Terms of Use"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_www_nutanix_com_07d48e5f",
       "action": "navigate",
       "link_text": "Privacy Statement",
@@ -3070,7 +3148,7 @@
       "description": "External link: Privacy Statement"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_www_nutanix_com_db4ca244",
       "action": "navigate",
       "link_text": "Do Not Sell or Share My Personal Information",
@@ -3079,7 +3157,7 @@
       "description": "External link: Do Not Sell or Share My Personal Information"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_cookiepedia_co_uk_935e7716",
       "action": "navigate",
       "link_text": "More information",
@@ -3088,7 +3166,7 @@
       "description": "External link: More information"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_www_onetrust_com_a6501b89",
       "action": "navigate",
       "link_text": "",
@@ -3097,7 +3175,7 @@
       "description": "External link: https://www.onetrust.com/products/cookie-consent/"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_idp_nutanix_com_dd0f7fac",
       "action": "navigate",
       "link_text": "Deal Registration",
@@ -3106,7 +3184,7 @@
       "description": "External link: Deal Registration"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_www_nutanixpartnerfundscenter_com_e687e838",
       "action": "navigate",
       "link_text": "Partner Funds Center",
@@ -3115,7 +3193,7 @@
       "description": "External link: Partner Funds Center"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_partnerportal_nutanix_com_6e9246a1",
       "action": "navigate",
       "link_text": "Manage BDF",
@@ -3124,7 +3202,7 @@
       "description": "External link: Manage BDF"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_idp_nutanix_com_84fd0a4c",
       "action": "navigate",
       "link_text": "Business Planning",
@@ -3133,7 +3211,7 @@
       "description": "External link: Business Planning"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_frontline_nutanix_com_d4cf256c",
       "action": "navigate",
       "link_text": "Frontline",
@@ -3142,7 +3220,7 @@
       "description": "External link: Frontline"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_cloud_nutanixtestdrive_com_a213628f",
       "action": "navigate",
       "link_text": "Test Drive Partner Center",
@@ -3151,7 +3229,7 @@
       "description": "External link: Test Drive Partner Center"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_sizer_nutanix_com_5d28d6e5",
       "action": "navigate",
       "link_text": "Sizer",
@@ -3160,7 +3238,7 @@
       "description": "External link: Sizer"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_portal_nutanix_com_75d4e3b5",
       "action": "navigate",
       "link_text": "Collector",
@@ -3169,7 +3247,7 @@
       "description": "External link: Collector"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_portal_nutanix_com_9b51196c",
       "action": "navigate",
       "link_text": "X-Ray",
@@ -3178,7 +3256,7 @@
       "description": "External link: X-Ray"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_portal_nutanix_com_1ea41061",
       "action": "navigate",
       "link_text": "Move",
@@ -3187,7 +3265,7 @@
       "description": "External link: Move"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_portal_nutanix_com_af5c8201",
       "action": "navigate",
       "link_text": "Support Portal",
@@ -3196,7 +3274,7 @@
       "description": "External link: Support Portal"
     },
     {
-      "from": "partner_dashboard",
+      "from": "partner_home",
       "to": "external_mainstayadvisor_com_9bcf4a35",
       "action": "navigate",
       "link_text": "TCO Calculator",
@@ -3243,6 +3321,6 @@
   "api_endpoints": {},
   "db_tables": {},
   "entrypoints": {
-    "Reseller": "partner_dashboard"
+    "Distributor": "partner_home"
   }
 }

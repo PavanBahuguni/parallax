@@ -20,14 +20,23 @@ logger = logging.getLogger(__name__)
 class AgentOrchestrator:
     """Orchestrates the automated QA workflow with intelligent decision making."""
     
-    def __init__(self, update_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None):
+    def __init__(
+        self,
+        update_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
+        project_id: Optional[str] = None,
+        project_config: Optional[Dict[str, Any]] = None
+    ):
         """Initialize orchestrator with optional callback for real-time updates.
         
         Args:
             update_callback: Async function to call with progress updates: {"step": "...", "status": "...", "message": "..."}
+            project_id: Optional project ID for project-specific configuration
+            project_config: Optional pre-loaded project configuration dict
         """
         self.update_callback = update_callback
         self.mapper_dir = Path(__file__).parent.parent.parent
+        self.project_id = project_id
+        self.project_config = project_config or {}
         
         # Load environment
         env_file = self.mapper_dir / ".env"
@@ -354,11 +363,34 @@ class AgentOrchestrator:
         try:
             script_path = self.mapper_dir / "semantic_mapper.py"
             
+            # Prepare environment with project config
+            env = os.environ.copy()
+            if self.project_config:
+                env["PROJECT_BASE_URL"] = self.project_config.get("BASE_URL", "")
+                env["PROJECT_API_BASE"] = self.project_config.get("API_BASE", "")
+                env["PROJECT_BACKEND_PATH"] = self.project_config.get("BACKEND_PATH", "")
+                # Extract persona names from persona objects
+                personas = self.project_config.get("PERSONAS", [])
+                if personas:
+                    persona_names = []
+                    for p in personas:
+                        if isinstance(p, dict):
+                            persona_names.append(p.get("name", ""))
+                        elif isinstance(p, str):
+                            # Legacy format
+                            persona_names.append(p)
+                    if persona_names:
+                        env["PROJECT_PERSONAS"] = ",".join(persona_names)
+                        # Also store full persona objects as JSON for gateway instructions access
+                        import json
+                        env["PROJECT_PERSONAS_FULL"] = json.dumps(personas)
+            
             process = await asyncio.create_subprocess_exec(
                 "uv", "run", "python", str(script_path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=str(self.mapper_dir)
+                cwd=str(self.mapper_dir),
+                env=env
             )
             
             stdout, _ = await process.communicate()
@@ -408,11 +440,21 @@ class AgentOrchestrator:
         try:
             script_path = self.mapper_dir / "context_processor.py"
             
+            # Prepare environment with project config
+            env = os.environ.copy()
+            if self.project_config:
+                env["PROJECT_BASE_URL"] = self.project_config.get("BASE_URL", "")
+                env["PROJECT_API_BASE"] = self.project_config.get("API_BASE", "")
+                env["PROJECT_DATABASE_URL"] = self.project_config.get("DATABASE_URL", "")
+                env["PROJECT_OPENAPI_URL"] = self.project_config.get("OPENAPI_URL", "")
+                env["PROJECT_BACKEND_PATH"] = self.project_config.get("BACKEND_PATH", "")
+            
             process = await asyncio.create_subprocess_exec(
                 "uv", "run", "python", str(script_path), str(task_file_path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=str(self.mapper_dir)
+                cwd=str(self.mapper_dir),
+                env=env
             )
             
             stdout, _ = await process.communicate()
@@ -608,6 +650,17 @@ class AgentOrchestrator:
             import os
             env = os.environ.copy()
             env.pop("VIRTUAL_ENV", None)
+            
+            # Add project config to environment
+            if self.project_config:
+                env["PROJECT_BASE_URL"] = self.project_config.get("BASE_URL", "")
+                env["PROJECT_API_BASE"] = self.project_config.get("API_BASE", "")
+                env["PROJECT_DATABASE_URL"] = self.project_config.get("DATABASE_URL", "")
+                # Keep existing DATABASE_URL if PROJECT_DATABASE_URL not set
+                if not env.get("PROJECT_DATABASE_URL") and env.get("DATABASE_URL"):
+                    pass  # Use existing DATABASE_URL
+                elif env.get("PROJECT_DATABASE_URL"):
+                    env["DATABASE_URL"] = env["PROJECT_DATABASE_URL"]
             
             process = await asyncio.create_subprocess_exec(
                 "uv", "run", "python", str(script_path), str(mission_file_path),

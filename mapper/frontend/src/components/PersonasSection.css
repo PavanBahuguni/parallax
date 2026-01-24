@@ -1,0 +1,371 @@
+.personas-section {
+  margin-top: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.add-persona-btn {
+  padding: 0.5rem 1rem;
+  background: white;
+  color: #333;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.add-persona-btn:hover {
+  background: #f5f5f5;
+  border-color: #646cff;
+  color: #646cff;
+}
+
+.personas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.persona-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.2s;
+}
+
+.persona-card:hover {
+  border-color: #646cff;
+}
+
+.persona-card .persona-header {
+  margin-bottom: 0;
+}
+
+/* Editing is now done in modal, so we don't need this style */
+
+.persona-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.persona-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.persona-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.manage-btn,
+.edit-btn {
+  padding: 0.625rem 1.25rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.delete-btn {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.manage-btn {
+  background: #646cff;
+  color: white;
+  border-color: #646cff;
+}
+
+.manage-btn:hover {
+  background: #535bf2;
+  border-color: #535bf2;
+}
+
+.edit-btn {
+  background: white;
+  color: #333;
+  border-color: #d0d0d0;
+}
+
+.edit-btn:hover {
+  background: #f5f5f5;
+  border-color: #646cff;
+  color: #646cff;
+}
+
+.delete-btn {
+  background: white;
+  color: #dc3545;
+  border-color: #dc3545;
+  padding: 0.75rem 1.5rem !important;
+}
+
+.delete-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.persona-instructions {
+  margin-top: 0;
+}
+
+.persona-instructions label {
+  display: block;
+  font-weight: 500;
+  color: #666;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.persona-instructions pre {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.persona-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.persona-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.persona-form label {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.875rem;
+}
+
+.persona-form input,
+.persona-form textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.persona-form input:focus,
+.persona-form textarea:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.persona-form textarea {
+  resize: vertical;
+  min-height: 150px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.form-actions button {
+  padding: 0.625rem 1.25rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.form-actions button:not(.primary) {
+  background: white;
+  color: #333;
+  border-color: #d0d0d0;
+}
+
+.form-actions button:not(.primary):hover {
+  background: #f5f5f5;
+  border-color: #646cff;
+  color: #646cff;
+}
+
+.form-actions button.primary {
+  background: #646cff;
+  color: white;
+  border-color: #646cff;
+}
+
+.form-actions button.primary:hover:not(:disabled) {
+  background: #535bf2;
+  border-color: #535bf2;
+}
+
+.form-actions button:disabled {
+  background: #f5f5f5;
+  color: #999;
+  border-color: #e0e0e0;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.persona-modal {
+  background: white;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body .persona-instructions {
+  margin: 0;
+}
+
+.modal-body .persona-instructions pre {
+  max-height: none;
+  background: #f9f9f9;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modal-footer .close-btn {
+  padding: 0.75rem 1.5rem !important;
+  background: white;
+  color: #333;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.modal-footer .close-btn:hover {
+  background: #f5f5f5;
+  border-color: #646cff;
+  color: #646cff;
+}
+
+.modal-footer .edit-btn {
+  padding: 0.625rem 1.25rem;
+}

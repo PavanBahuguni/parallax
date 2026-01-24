@@ -18,7 +18,7 @@ import asyncio
 import json
 import os
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Set
 from playwright.async_api import async_playwright, Page, Request, Response
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
@@ -110,19 +110,26 @@ class FixedNutanixChatModel(BaseChatModel):
 
 
 # --- Configuration ---
-CONFIG = {
-    "BASE_URL": "http://localhost:5173",
-    "API_BASE": "http://localhost:8000",
-    "BACKEND_PATH": "../sample-app/backend",
-    "GRAPH_FILE": "semantic_graph.json"
-}
+# Load from environment variables (set by project config) or use defaults
+def get_config():
+    """Get configuration from environment variables or defaults."""
+    return {
+        "BASE_URL": os.getenv("PROJECT_BASE_URL", os.getenv("BASE_URL", "http://localhost:5173")),
+        "API_BASE": os.getenv("PROJECT_API_BASE", os.getenv("API_BASE", "http://localhost:8000")),
+        "BACKEND_PATH": os.getenv("PROJECT_BACKEND_PATH", os.getenv("BACKEND_PATH", "../sample-app/backend")),
+        "GRAPH_FILE": os.getenv("GRAPH_FILE", "semantic_graph.json"),
+        "PERSONAS": os.getenv("PROJECT_PERSONAS", "").split(",") if os.getenv("PROJECT_PERSONAS") else []
+    }
+
+CONFIG = get_config()  # For backward compatibility, but prefer using get_config() in new code
 
 
 class SemanticMapper:
     """Enriched mapper that produces semantic navigation graph."""
     
-    def __init__(self, llm: BaseChatModel):
+    def __init__(self, llm: BaseChatModel, config: Optional[Dict[str, Any]] = None):
         self.llm = llm
+        self.config = config or get_config()  # Use provided config or load from env
         self.graph = {
             "nodes": [],
             "edges": [],
@@ -133,6 +140,7 @@ class SemanticMapper:
         self.visited_urls: set = set()
         self.route_templates: Dict[str, Dict] = {}  # Template URL -> merged node data
         self.discovered_templates: set = set()  # Track which templates we've already discovered
+        self.dynamically_discovered_links: List[Dict[str, str]] = []  # Links discovered after button clicks
     
     async def analyze_with_llm(self, prompt: str) -> str:
         """Use LLM to analyze and extract semantic information."""
@@ -404,7 +412,8 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
         
         async def handle_request(request: Request):
             """Capture outgoing API requests."""
-            if CONFIG["API_BASE"] in request.url or "localhost:8000" in request.url:
+            api_base = self.config.get("API_BASE", "")
+            if api_base and api_base in request.url or "localhost:8000" in request.url:
                 self.network_log.append({
                     "type": "request",
                     "method": request.method,
@@ -415,7 +424,8 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
         
         async def handle_response(response: Response):
             """Capture API responses."""
-            if CONFIG["API_BASE"] in response.url or "localhost:8000" in response.url:
+            api_base = self.config.get("API_BASE", "")
+            if api_base and api_base in response.url or "localhost:8000" in response.url:
                 try:
                     status = response.status
                     # Try to get response body (may fail for some responses)
@@ -470,8 +480,9 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
             
             # Store unique API endpoints
             unique_endpoints = set()
+            api_base = self.config.get("API_BASE", "")
             for api in relevant_apis:
-                endpoint = api["url"].replace(CONFIG["API_BASE"], "")
+                endpoint = api["url"].replace(api_base, "") if api_base else api["url"]
                 unique_endpoints.add(f"{api['method']} {endpoint}")
             
             component["triggers_api"] = list(unique_endpoints)
@@ -551,8 +562,9 @@ Do not include quotes or extra formatting, just the title text.
         await self.enrich_components_with_apis(components, start_time, end_time)
         
         # Get active APIs (APIs called during page load)
+        api_base = self.config.get("API_BASE", "")
         active_apis = [
-            f"{log['method']} {log['url'].replace(CONFIG['API_BASE'], '')}"
+            f"{log['method']} {log['url'].replace(api_base, '') if api_base else log['url']}"
             for log in self.network_log
             if log["type"] == "request" and start_time <= log["timestamp"] <= end_time
         ]
@@ -581,11 +593,21 @@ Do not include quotes or extra formatting, just the title text.
         
         # Create edge if there's a parent
         if parent_url:
+            # Build description from action
+            if action == "navigate":
+                description = "Navigate"
+            elif action:
+                description = f"{action.capitalize()}"
+            else:
+                description = "Navigate"
+            
             self.graph["edges"].append({
                 "from": parent_url,
                 "to": url,
-                "action": action,
-                "selector": None  # Would need to track which element was clicked
+                "action": action or "navigate",
+                "method": "navigate",
+                "selector": None,  # Would need to track which element was clicked
+                "description": description
             })
         
         print(f"   ✅ Node: {node_id}")
@@ -598,6 +620,7 @@ Do not include quotes or extra formatting, just the title text.
         """Try clicking a button that might open a form, then detect and interact with the form.
         
         This handles cases where forms appear dynamically (e.g., modals, collapsible forms).
+        Also detects new links that appear after clicking (e.g., tool buttons that reveal navigation).
         """
         print(f"\n🔧 Testing button that might open form: {button_component['role']}")
         
@@ -607,13 +630,27 @@ Do not include quotes or extra formatting, just the title text.
             if not button_selector:
                 return False
             
+            # Capture links before clicking (to detect new ones after)
+            links_before = await self.get_current_links(page)
+            
             # Record network activity before click
             start_time = asyncio.get_event_loop().time()
             network_before = len(self.network_log)
             
             # Click button
             await page.click(button_selector, timeout=3000)
-            await asyncio.sleep(0.5)  # Wait for form to appear
+            await asyncio.sleep(0.5)  # Wait for form/content to appear
+            
+            # Check for new links that appeared after clicking
+            new_links = await self.discover_new_links_after_click(page, links_before, wait_time=1.0)
+            if new_links:
+                print(f"   🔗 Discovered {len(new_links)} new link(s) after clicking button")
+                # Add new links to discovery queue
+                for link in new_links:
+                    if link['url'] not in self.visited_urls:
+                        # Add to dynamically discovered links queue
+                        self.dynamically_discovered_links.append(link)
+                        print(f"      → {link['text'] or link['url']}: {link['url']}")
             
             # Look for form that appeared (could be in modal or on page)
             form_selectors = [
@@ -741,8 +778,9 @@ Do not include quotes or extra formatting, just the title text.
             
             # Get APIs triggered during form submission
             triggered_apis = self.network_log[network_before:network_after]
+            api_base = self.config.get("API_BASE", "")
             request_apis = [
-                f"{log['method']} {log['url'].replace(CONFIG['API_BASE'], '').replace('http://localhost:8000', '')}"
+                f"{log['method']} {log['url'].replace(api_base, '').replace('http://localhost:8000', '') if api_base else log['url']}"
                 for log in triggered_apis
                 if log["type"] == "request"
             ]
@@ -820,8 +858,9 @@ Do not include quotes or extra formatting, just the title text.
                 
                 # Get APIs triggered during form submission
                 triggered_apis = self.network_log[network_before:network_after]
+                api_base = self.config.get("API_BASE", "")
                 request_apis = [
-                    f"{log['method']} {log['url'].replace(CONFIG['API_BASE'], '').replace('http://localhost:8000', '')}"
+                    f"{log['method']} {log['url'].replace(api_base, '').replace('http://localhost:8000', '') if api_base else log['url']}"
                     for log in triggered_apis
                     if log["type"] == "request"
                 ]
@@ -859,7 +898,9 @@ Do not include quotes or extra formatting, just the title text.
         # Pattern: /products/123, /orders/456, etc.
         # Match numeric IDs at the end of URL path
         pattern = r'^(.+)/(\d+)$'
-        match = re.match(pattern, url.replace(CONFIG['BASE_URL'], ''))
+        base_url = self.config.get("BASE_URL", "")
+        url_path = url.replace(base_url, '') if base_url else url
+        match = re.match(pattern, url_path)
         
         if match:
             base_path = match.group(1)
@@ -883,7 +924,8 @@ Do not include quotes or extra formatting, just the title text.
                 template = f"{base_path}/{{{param_name}}}"
             
             # Convert to full URL template
-            full_template = f"{CONFIG['BASE_URL']}{template}"
+            base_url = self.config.get("BASE_URL", "")
+            full_template = f"{base_url}{template}"
             return full_template, param_name, param_value
         
         return url, None, None
@@ -1034,6 +1076,108 @@ Do not include quotes or extra formatting, just the title text.
         
         print(f"   ✅ Merged {merged_count} duplicate nodes into templates")
     
+    async def get_current_links(self, page: Page) -> Set[str]:
+        """Get set of all current link hrefs on the page (for comparison after clicks)."""
+        try:
+            link_elements = await page.query_selector_all('a[href]')
+            hrefs = set()
+            for link in link_elements:
+                href = await link.get_attribute('href')
+                if href:
+                    # Normalize href for comparison
+                    base_url = self.config.get("BASE_URL", "")
+                    if href.startswith('/'):
+                        full_url = f"{base_url}{href}"
+                    elif href.startswith('http'):
+                        if base_url and base_url in href:
+                            full_url = href
+                        else:
+                            continue
+                    else:
+                        current_url = page.url
+                        base = current_url.rsplit('/', 1)[0] if '/' in current_url else base_url
+                        full_url = f"{base}/{href}"
+                    hrefs.add(full_url)
+            return hrefs
+        except Exception as e:
+            print(f"   ⚠️ Error getting current links: {e}")
+            return set()
+    
+    async def discover_new_links_after_click(self, page: Page, links_before: Set[str], wait_time: float = 1.0) -> List[Dict[str, str]]:
+        """Discover new links that appeared after clicking a button/tool.
+        
+        Args:
+            page: Playwright page object
+            links_before: Set of hrefs that existed before the click
+            wait_time: Time to wait for dynamic content to load (default: 1.0 seconds)
+            
+        Returns:
+            List of new link dictionaries that weren't present before
+        """
+        # Wait for dynamic content to load
+        await asyncio.sleep(wait_time)
+        
+        # Get all current links
+        links_after = await self.get_current_links(page)
+        
+        # Find new links
+        new_hrefs = links_after - links_before
+        
+        if not new_hrefs:
+            return []
+        
+        print(f"   🔗 Found {len(new_hrefs)} new link(s) after click")
+        
+        # Convert new hrefs to full link dictionaries
+        new_links = []
+        try:
+            link_elements = await page.query_selector_all('a[href]')
+            for link in link_elements:
+                href = await link.get_attribute('href')
+                if not href:
+                    continue
+                
+                # Normalize href
+                base_url = self.config.get("BASE_URL", "")
+                if href.startswith('/'):
+                    full_url = f"{base_url}{href}"
+                elif href.startswith('http'):
+                    if base_url and base_url in href:
+                        full_url = href
+                    else:
+                        continue
+                else:
+                    current_url = page.url
+                    base = current_url.rsplit('/', 1)[0] if '/' in current_url else base_url
+                    full_url = f"{base}/{href}"
+                
+                # Only include if this is a new link
+                if full_url in new_hrefs:
+                    text = (await link.inner_text()).strip()
+                    link_id = await link.get_attribute('id')
+                    data_testid = await link.get_attribute('data-testid')
+                    
+                    # Build selector
+                    selector = None
+                    if link_id:
+                        selector = f"a#{link_id}"
+                    elif data_testid:
+                        selector = f"a[data-testid='{data_testid}']"
+                    elif text:
+                        selector = f"a:has-text('{text[:50]}')"
+                    
+                    new_links.append({
+                        "url": full_url,
+                        "text": text,
+                        "selector": selector or f"a[href='{href}']",
+                        "href": href,
+                        "discovered_via": "dynamic_click"  # Mark as dynamically discovered
+                    })
+        except Exception as e:
+            print(f"   ⚠️ Error extracting new links: {e}")
+        
+        return new_links
+    
     async def discover_navigation_links(self, page: Page) -> List[Dict[str, str]]:
         """Discover navigation links (React Router Links, anchor tags, buttons that navigate)."""
         links = []
@@ -1050,36 +1194,37 @@ Do not include quotes or extra formatting, just the title text.
                 
                 if href:
                     # Convert relative URLs to absolute
+                    base_url = self.config.get("BASE_URL", "")
                     if href.startswith('/'):
-                        full_url = f"{CONFIG['BASE_URL']}{href}"
+                        full_url = f"{base_url}{href}"
                     elif href.startswith('http'):
                         # Only include links to our app
-                        if CONFIG['BASE_URL'] in href:
+                        if base_url and base_url in href:
                             full_url = href
                         else:
                             continue
                     else:
                         # Relative path, construct full URL
                         current_url = page.url
-                        base = current_url.rsplit('/', 1)[0] if '/' in current_url else CONFIG['BASE_URL']
+                        base = current_url.rsplit('/', 1)[0] if '/' in current_url else base_url
                         full_url = f"{base}/{href}"
                     
-                    # Build selector
-                    selector = None
-                    if link_id:
-                        selector = f"a#{link_id}"
-                    elif data_testid:
-                        selector = f"a[data-testid='{data_testid}']"
-                    elif text:
-                        # Use text content as fallback
-                        selector = f"a:has-text('{text[:50]}')"  # Limit text length
-                    
-                    links.append({
-                        "url": full_url,
-                        "text": text,
-                        "selector": selector or f"a[href='{href}']",
-                        "href": href
-                    })
+                        # Build selector
+                        selector = None
+                        if link_id:
+                            selector = f"a#{link_id}"
+                        elif data_testid:
+                            selector = f"a[data-testid='{data_testid}']"
+                        elif text:
+                            # Use text content as fallback
+                            selector = f"a:has-text('{text[:50]}')"  # Limit text length
+                        
+                        links.append({
+                            "url": full_url,
+                            "text": text,
+                            "selector": selector or f"a[href='{href}']",
+                            "href": href
+                        })
             
             # Also check navigation buttons (like in our Navigation component)
             nav_buttons = await page.query_selector_all('nav a, .navigation a, [data-testid^="nav-"]')
@@ -1089,9 +1234,10 @@ Do not include quotes or extra formatting, just the title text.
                     text = (await btn.inner_text()).strip()
                     data_testid = await btn.get_attribute('data-testid')
                     
+                    base_url = self.config.get("BASE_URL", "")
                     if href.startswith('/'):
-                        full_url = f"{CONFIG['BASE_URL']}{href}"
-                    elif href.startswith('http') and CONFIG['BASE_URL'] in href:
+                        full_url = f"{base_url}{href}"
+                    elif href.startswith('http') and base_url and base_url in href:
                         full_url = href
                     else:
                         continue
@@ -1141,12 +1287,23 @@ Do not include quotes or extra formatting, just the title text.
         # Get navigation links (from the actual page we just navigated to)
         links = await self.discover_navigation_links(page)
         
+        # Also include dynamically discovered links (from button clicks)
+        if self.dynamically_discovered_links:
+            print(f"\n🔗 Including {len(self.dynamically_discovered_links)} dynamically discovered link(s)")
+            # Add dynamically discovered links that haven't been visited
+            for dyn_link in self.dynamically_discovered_links:
+                if dyn_link['url'] not in [l['url'] for l in links] and dyn_link['url'] not in self.visited_urls:
+                    links.append(dyn_link)
+            # Clear the queue after processing
+            self.dynamically_discovered_links = []
+        
         print(f"\n🔗 Found {len(links)} navigation link(s)")
         
         # Filter to only internal routes (same base URL)
+        base_url = self.config.get("BASE_URL", "")
         internal_links = [
             link for link in links 
-            if link['url'].startswith(CONFIG['BASE_URL']) and link['url'] not in self.visited_urls
+            if link['url'].startswith(base_url) and link['url'] not in self.visited_urls
         ]
         
         # Smart filtering: Group links by template pattern and only visit one per template
@@ -1244,13 +1401,44 @@ Do not include quotes or extra formatting, just the title text.
                             for e in self.graph['edges']
                         )
                         if not edge_exists:
-                            self.graph['edges'].append({
+                            # Build navigation description
+                            link_text = link.get('text', '').strip()
+                            href = link.get('href', '')
+                            selector = link.get('selector', '')
+                            
+                            # Create descriptive label
+                            if link_text:
+                                description = f"Click '{link_text}'"
+                            elif href:
+                                description = f"Navigate to {href}"
+                            else:
+                                description = "Navigate"
+                            
+                            # Add method/action details
+                            method = "click"  # Default navigation method
+                            if selector:
+                                if 'button' in selector.lower():
+                                    method = "click button"
+                                elif 'a' in selector.lower() or 'link' in selector.lower():
+                                    method = "click link"
+                            
+                            edge_data = {
                                 "from": current_node_id,
                                 "to": target_node_id,
                                 "action": "navigate",
-                                "selector": link['selector']
-                            })
-                            print(f"      ✅ Created edge: {current_node_id} → {target_node_id}")
+                                "method": method,
+                                "selector": selector,
+                                "description": description
+                            }
+                            
+                            # Add optional fields if available
+                            if link_text:
+                                edge_data["link_text"] = link_text
+                            if href:
+                                edge_data["href"] = href
+                            
+                            self.graph['edges'].append(edge_data)
+                            print(f"      ✅ Created edge: {current_node_id} → {target_node_id} ({description})")
                 
                 # Note: We don't navigate back because we're doing depth-first traversal
                 # The navigation bar appears on every page, so we'll discover all routes
@@ -1284,7 +1472,9 @@ async def run_semantic_mapper():
         return
     
     print(f"🤖 LLM: {model}")
-    print(f"🌐 Target: {CONFIG['BASE_URL']}")
+    # Get config
+    config = get_config()
+    print(f"🌐 Target: {config['BASE_URL']}")
     print()
     
     # Initialize LLM
@@ -1294,8 +1484,8 @@ async def run_semantic_mapper():
         model_name=model
     )
     
-    # Initialize mapper
-    mapper = SemanticMapper(llm)
+    # Initialize mapper with config
+    mapper = SemanticMapper(llm, config=config)
     
     # Run discovery
     async with async_playwright() as p:
@@ -1308,7 +1498,7 @@ async def run_semantic_mapper():
         try:
             # Discover all routes by following navigation links
             print("\n🚀 Starting route discovery...")
-            await mapper.discover_all_routes(page, CONFIG["BASE_URL"], max_depth=3)
+            await mapper.discover_all_routes(page, config["BASE_URL"], max_depth=3)
             
             # Try to interact with forms on each discovered page to discover more APIs
             print("\n🔧 Interacting with forms to discover APIs...")
@@ -1343,7 +1533,7 @@ async def run_semantic_mapper():
     mapper.merge_parameterized_nodes()
     
     # Save graph
-    output_path = os.path.join(os.path.dirname(__file__), CONFIG["GRAPH_FILE"])
+    output_path = os.path.join(os.path.dirname(__file__), config["GRAPH_FILE"])
     with open(output_path, 'w') as f:
         json.dump(mapper.graph, f, indent=2)
     
