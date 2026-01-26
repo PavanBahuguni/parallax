@@ -4,6 +4,7 @@ import { api, Project, Task, Execution } from '../api/client'
 import SemanticGraphViewer from '../components/SemanticGraphViewer'
 import PersonasSection from '../components/PersonasSection'
 import type { Persona } from '../components/PersonasSection'
+import ProjectForm from '../components/ProjectForm'
 import './ProjectDetailPage.css'
 
 function ProjectDetailPage() {
@@ -27,7 +28,6 @@ function ProjectDetailPage() {
       loadTasks()
     }
     
-    // Cleanup polling interval on unmount
     return () => {
       if (pollIntervalId) {
         clearInterval(pollIntervalId)
@@ -35,10 +35,8 @@ function ProjectDetailPage() {
     }
   }, [projectId])
 
-  // Load graph after project is loaded (so we can use project personas)
   useEffect(() => {
     if (projectId && project) {
-      // Load first persona's graph by default
       const personas = project.personas || []
       if (personas.length > 0 && !selectedPersona) {
         const firstPersona = personas[0]
@@ -50,7 +48,6 @@ function ProjectDetailPage() {
     }
   }, [projectId, project])
   
-  // Reload graph when selected persona changes
   useEffect(() => {
     if (projectId && project && selectedPersona) {
       loadGraph(selectedPersona)
@@ -77,7 +74,6 @@ function ProjectDetailPage() {
       setTasks(data)
     } catch (err: any) {
       console.error('Failed to load tasks:', err)
-      // Fallback to file-based tasks if DB not available
       try {
         const fileTasks = await api.getTasks()
         setTasks(fileTasks)
@@ -90,7 +86,6 @@ function ProjectDetailPage() {
   const loadGraph = async (personaName?: string) => {
     if (!projectId) return
     try {
-      // Load graph for specific persona, or first persona if none specified
       const personas = project?.personas || []
       let targetPersona = personaName
       
@@ -100,7 +95,6 @@ function ProjectDetailPage() {
       }
       
       if (!targetPersona) {
-        // Fallback: try loading without persona (will use default)
         const data = await api.getSemanticGraph(undefined, projectId)
         setGraph(data)
         setSelectedPersona(null)
@@ -111,7 +105,6 @@ function ProjectDetailPage() {
       setGraph(data)
       setSelectedPersona(targetPersona)
     } catch (err) {
-      // Graph may not exist yet
       console.log(`Graph not available for persona ${personaName}:`, err)
       setGraph(null)
     }
@@ -150,19 +143,16 @@ function ProjectDetailPage() {
       
       const response = await api.regenerateSemanticMaps(projectId, headlessMode)
       
-      // Set initial status
       let initialExecution: Execution
       try {
         initialExecution = await api.getExecution(response.execution_id)
         setRegenerationStatus(initialExecution)
       } catch (err) {
         console.error('Error getting initial execution status:', err)
-        // Continue anyway
       }
       
-      // Poll for execution status
       let pollCount = 0
-      const maxPolls = 300 // 10 minutes max (300 * 2 seconds)
+      const maxPolls = 300
       const pollInterval = setInterval(async () => {
         pollCount++
         
@@ -184,17 +174,14 @@ function ProjectDetailPage() {
             setIsRegenerating(false)
             
             if (execution.status === 'completed') {
-              // Reload graph after successful regeneration
               await loadGraph()
             }
           }
         } catch (err) {
           console.error('Error polling execution status:', err)
-          // Continue polling
         }
-      }, 2000) // Poll every 2 seconds
+      }, 2000)
       
-      // Store interval ID for cleanup
       setPollIntervalId(pollInterval)
       
     } catch (err: any) {
@@ -205,9 +192,12 @@ function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="project-detail-page">
-        <div className="container">
-          <div className="loading">Loading project...</div>
+      <div className="pdp">
+        <div className="pdp-container">
+          <div className="pdp-loading">
+            <div className="pdp-spinner"></div>
+            <span>Loading project...</span>
+          </div>
         </div>
       </div>
     )
@@ -215,37 +205,69 @@ function ProjectDetailPage() {
 
   if (error || !project) {
     return (
-      <div className="project-detail-page">
-        <div className="container">
-          <div className="error">Error: {error || 'Project not found'}</div>
-          <Link to="/">← Back to Projects</Link>
+      <div className="pdp">
+        <div className="pdp-container">
+          <div className="pdp-error-state">
+            <div className="pdp-error-icon">!</div>
+            <h2>Error Loading Project</h2>
+            <p>{error || 'Project not found'}</p>
+            <button onClick={() => navigate('/')} className="pdp-btn pdp-btn-secondary">
+              Back to Projects
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="project-detail-page">
-      <div className="container">
-        <div className="page-header">
-          <div>
-            <Link to="/" className="back-link">
-              ← Back to Projects
-            </Link>
-            <h1>{project.name}</h1>
-            {project.description && <p className="project-description">{project.description}</p>}
+    <div className="pdp">
+      <div className="pdp-container">
+        {/* Header */}
+        <header className="pdp-header">
+          <button onClick={() => navigate('/')} className="pdp-back-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
+          </button>
+          
+          <div className="pdp-header-content">
+            <div className="pdp-title-row">
+              <h1 className="pdp-title">{project.name}</h1>
+              <div className="pdp-actions">
+                <button onClick={() => setShowEditForm(true)} className="pdp-btn pdp-btn-secondary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit
+                </button>
+                <button onClick={handleDelete} className="pdp-btn pdp-btn-danger">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+            {project.description && <p className="pdp-description">{project.description}</p>}
           </div>
-          <div className="header-actions">
-            <button onClick={() => setShowEditForm(true)}>Edit</button>
-            <button onClick={handleDelete} className="danger">
-              Delete
-            </button>
-          </div>
-        </div>
+        </header>
 
         {showEditForm && (
-          <div className="modal-overlay" onClick={() => setShowEditForm(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="pdp-modal-overlay" onClick={() => setShowEditForm(false)}>
+            <div className="pdp-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="pdp-modal-header">
+                <h2>Edit Project</h2>
+                <button className="pdp-modal-close" onClick={() => setShowEditForm(false)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
               <ProjectForm
                 project={project}
                 onClose={() => setShowEditForm(false)}
@@ -258,180 +280,202 @@ function ProjectDetailPage() {
           </div>
         )}
 
-        <div className="project-sections">
-          {/* Project Configuration */}
-          <section className="project-config">
-            <h2>Configuration</h2>
-            <div className="config-grid">
-              <div className="config-item">
-                <span className="config-label">UI URL:</span>
-                <span className="config-value">{project.ui_url}</span>
+        <div className="pdp-grid">
+          {/* Main Column */}
+          <div className="pdp-main-col">
+            {/* Configuration */}
+            <section className="pdp-card">
+              <div className="pdp-card-header">
+                <h2 className="pdp-card-title">Configuration</h2>
               </div>
-              {project.api_base_url && (
-                <div className="config-item">
-                  <span className="config-label">API Base URL:</span>
-                  <span className="config-value">{project.api_base_url}</span>
+              <div className="pdp-card-body">
+                <div className="pdp-config-grid">
+                  <div className="pdp-config-item">
+                    <span className="pdp-config-label">UI URL</span>
+                    <a href={project.ui_url} target="_blank" rel="noopener noreferrer" className="pdp-config-value link">
+                      {project.ui_url}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                    </a>
+                  </div>
+                  {project.api_base_url && (
+                    <div className="pdp-config-item">
+                      <span className="pdp-config-label">API Base URL</span>
+                      <span className="pdp-config-value">{project.api_base_url}</span>
+                    </div>
+                  )}
+                  {project.openapi_url && (
+                    <div className="pdp-config-item">
+                      <span className="pdp-config-label">OpenAPI URL</span>
+                      <a href={project.openapi_url} target="_blank" rel="noopener noreferrer" className="pdp-config-value link">
+                        {project.openapi_url}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                          <polyline points="15 3 21 3 21 9"/>
+                          <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                  {project.database_url && (
+                    <div className="pdp-config-item">
+                      <span className="pdp-config-label">Database URL</span>
+                      <span className="pdp-config-value mono">{project.database_url}</span>
+                    </div>
+                  )}
+                  {project.backend_path && (
+                    <div className="pdp-config-item">
+                      <span className="pdp-config-label">Backend Path</span>
+                      <span className="pdp-config-value mono">{project.backend_path}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {project.openapi_url && (
-                <div className="config-item">
-                  <span className="config-label">OpenAPI URL:</span>
-                  <span className="config-value">{project.openapi_url}</span>
-                </div>
-              )}
-              {project.database_url && (
-                <div className="config-item">
-                  <span className="config-label">Database URL:</span>
-                  <span className="config-value">{project.database_url}</span>
-                </div>
-              )}
-              {project.backend_path && (
-                <div className="config-item">
-                  <span className="config-label">Backend Path:</span>
-                  <span className="config-value">{project.backend_path}</span>
-                </div>
-              )}
-            </div>
-          </section>
+              </div>
+            </section>
 
-          {/* Personas Section */}
-          <section className="personas-management-section">
-            <div className="section-header">
-              <h2>Personas</h2>
-              <div className="regenerate-controls">
-                <label className="headless-toggle">
-                  <input
-                    type="checkbox"
-                    checked={!headlessMode}
-                    onChange={(e) => setHeadlessMode(!e.target.checked)}
-                    disabled={isRegenerating}
-                  />
-                  <span>Show browser (non-headless)</span>
-                </label>
-                <button 
-                  onClick={handleRegenerateSemanticMaps}
-                  disabled={isRegenerating || (project.personas || []).length === 0}
-                  className="regenerate-button"
-                >
-                  {isRegenerating ? 'Regenerating...' : 'Regenerate Semantic Maps'}
+            {/* Tasks */}
+            <section className="pdp-card">
+              <div className="pdp-card-header">
+                <h2 className="pdp-card-title">Tasks</h2>
+                <button onClick={loadTasks} className="pdp-icon-btn" title="Refresh Tasks">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
                 </button>
               </div>
-            </div>
-            
-            {regenerationStatus && (
-              <div className={`regeneration-status ${regenerationStatus.status}`}>
-                <div className="status-header">
-                  <strong>Regeneration Status: {regenerationStatus.status}</strong>
-                  {regenerationStatus.status === 'running' && <span className="spinner">⏳</span>}
+              <div className="pdp-card-body pdp-no-padding">
+                {tasks.length === 0 ? (
+                  <div className="pdp-empty">
+                    <div className="pdp-empty-icon">📝</div>
+                    <p>No tasks found</p>
+                    <span className="pdp-hint">Tasks are loaded from mapper/tasks/*.md files</span>
+                  </div>
+                ) : (
+                  <div className="pdp-tasks-list">
+                    {tasks.map((task) => (
+                      <TaskCard key={task.id} task={task} projectId={projectId!} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Semantic Graph */}
+            <section className="pdp-card">
+              <div className="pdp-card-header">
+                <h2 className="pdp-card-title">Semantic Graph</h2>
+                {project.personas && project.personas.length > 1 && (
+                  <div className="pdp-select-wrapper">
+                    <select
+                      value={selectedPersona || ''}
+                      onChange={(e) => setSelectedPersona(e.target.value || null)}
+                      className="pdp-select"
+                    >
+                      {project.personas.map((persona: any) => {
+                        const personaName = typeof persona === 'string' ? persona : persona.name || persona
+                        return (
+                          <option key={personaName} value={personaName}>
+                            {personaName}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="pdp-card-body pdp-graph-container">
+                {graph && graph.nodes && graph.nodes.length > 0 ? (
+                  <SemanticGraphViewer graph={graph} />
+                ) : (
+                  <div className="pdp-empty">
+                    <div className="pdp-empty-icon">🕸️</div>
+                    <p>No graph available{selectedPersona ? ` for ${selectedPersona}` : ''}</p>
+                    <span className="pdp-hint">Run "Regenerate Semantic Maps" to generate</span>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="pdp-sidebar-col">
+            {/* Personas */}
+            <section className="pdp-card">
+              <div className="pdp-card-header">
+                <h2 className="pdp-card-title">Personas</h2>
+              </div>
+              <div className="pdp-card-body">
+                <div className="pdp-regen-controls">
+                  <label className="pdp-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!headlessMode}
+                      onChange={(e) => setHeadlessMode(!e.target.checked)}
+                      disabled={isRegenerating}
+                    />
+                    <span className="pdp-toggle-slider"></span>
+                    <span className="pdp-toggle-label">Show Browser</span>
+                  </label>
+                  <button 
+                    onClick={handleRegenerateSemanticMaps}
+                    disabled={isRegenerating || (project.personas || []).length === 0}
+                    className="pdp-btn pdp-btn-primary pdp-btn-full"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <div className="pdp-spinner-sm"></div>
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                          <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Regenerate Maps
+                      </>
+                    )}
+                  </button>
                 </div>
-                {regenerationStatus.result && (
-                  <div className="status-details">
-                    {regenerationStatus.result.results && (
-                      <div className="persona-results">
+
+                {regenerationStatus && (
+                  <div className={`pdp-status ${regenerationStatus.status}`}>
+                    <div className="pdp-status-header">
+                      <strong>Status: {regenerationStatus.status}</strong>
+                    </div>
+                    {regenerationStatus.result?.results && (
+                      <div className="pdp-status-list">
                         {regenerationStatus.result.results.map((result: any, idx: number) => (
-                          <div key={idx} className={`persona-result ${result.success ? 'success' : 'failed'}`}>
-                            <span className="persona-name">{result.persona}:</span>
-                            <span className="persona-status">
-                              {result.success ? (
-                                <>✅ Success ({result.graph?.nodes_count || 0} nodes, {result.graph?.edges_count || 0} edges)</>
-                              ) : (
-                                <>❌ Failed</>
-                              )}
-                            </span>
+                          <div key={idx} className={`pdp-status-item ${result.success ? 'success' : 'failed'}`}>
+                            <span>{result.persona}</span>
+                            <span>{result.success ? '✅' : '❌'}</span>
                           </div>
                         ))}
                       </div>
                     )}
-                    {regenerationStatus.result.successful !== undefined && (
-                      <div className="summary">
-                        {regenerationStatus.result.successful} of {regenerationStatus.result.total_personas} persona(s) completed successfully
-                      </div>
-                    )}
                   </div>
                 )}
-                {regenerationStatus.error && (
-                  <div className="error-message">Error: {regenerationStatus.error}</div>
-                )}
-              </div>
-            )}
-            
-            <PersonasSection
-              personas={(project.personas || []) as Persona[]}
-              onChange={async (updatedPersonas) => {
-                try {
-                  await api.updateProject(projectId!, {
-                    personas: updatedPersonas,
-                  })
-                  await loadProject()
-                } catch (err: any) {
-                  alert(`Failed to update personas: ${err.message}`)
-                }
-              }}
-            />
-          </section>
 
-          {/* Tasks List */}
-          <section className="tasks-section">
-            <div className="section-header">
-              <h2>Tasks</h2>
-              <button onClick={loadTasks}>Refresh</button>
-            </div>
-
-            {tasks.length === 0 ? (
-              <div className="empty-state">
-                <p>No tasks found.</p>
-                <p className="hint">
-                  Tasks are loaded from <code>mapper/tasks/*.md</code> files.
-                  Create task markdown files in the tasks directory to see them here.
-                </p>
-                <p className="hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#999' }}>
-                  Future: Tasks will be synced from Jira.
-                </p>
+                <PersonasSection
+                  personas={(project.personas || []) as Persona[]}
+                  onChange={async (updatedPersonas) => {
+                    try {
+                      await api.updateProject(projectId!, {
+                        personas: updatedPersonas,
+                      })
+                      await loadProject()
+                    } catch (err: any) {
+                      alert(`Failed to update personas: ${err.message}`)
+                    }
+                  }}
+                />
               </div>
-            ) : (
-              <div className="tasks-list">
-                {tasks.map((task) => (
-                  <TaskCard key={task.id} task={task} projectId={projectId!} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Semantic Graph */}
-          <section className="graph-section">
-            <div className="section-header">
-              <h2>Semantic Graph</h2>
-              {project.personas && project.personas.length > 1 && (
-                <div className="persona-selector">
-                  <label htmlFor="persona-select">View Graph for:</label>
-                  <select
-                    id="persona-select"
-                    value={selectedPersona || ''}
-                    onChange={(e) => setSelectedPersona(e.target.value || null)}
-                  >
-                    {project.personas.map((persona: any) => {
-                      const personaName = typeof persona === 'string' ? persona : persona.name || persona
-                      return (
-                        <option key={personaName} value={personaName}>
-                          {personaName}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </div>
-              )}
-            </div>
-            {graph && graph.nodes && graph.nodes.length > 0 ? (
-              <SemanticGraphViewer graph={graph} />
-            ) : (
-              <div className="empty-state">
-                <p>No graph available{selectedPersona ? ` for persona "${selectedPersona}"` : ''}.</p>
-                <p className="hint">
-                  Run "Regenerate Semantic Maps" to generate the graph for this persona.
-                </p>
-              </div>
-            )}
-          </section>
+            </section>
+          </div>
         </div>
       </div>
     </div>
@@ -440,39 +484,27 @@ function ProjectDetailPage() {
 
 function TaskCard({ task, projectId }: { task: Task; projectId: string }) {
   return (
-    <Link to={`/projects/${projectId}/tasks/${task.id}`} className="task-card">
-      <div className="task-header">
-        <h3>{task.title}</h3>
-        <span className="task-id">{task.id}</span>
+    <Link to={`/projects/${projectId}/tasks/${task.id}`} className="pdp-task-row">
+      <div className="pdp-task-main">
+        <div className="pdp-task-header">
+          <span className="pdp-task-id">{task.id}</span>
+          <h3 className="pdp-task-title">{task.title}</h3>
+        </div>
+        <p className="pdp-task-desc">
+          {task.description?.substring(0, 120)}
+          {task.description && task.description.length > 120 ? '...' : ''}
+        </p>
       </div>
-      <p className="task-description">
-        {task.description?.substring(0, 150)}
-        {task.description && task.description.length > 150 ? '...' : ''}
-      </p>
-      {task.pr_link && (
-        <a
-          href={task.pr_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="task-pr-link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          View PR →
-        </a>
-      )}
-      <div className="task-footer">
-        <span className="task-path">{task.file_path}</span>
-        {task.updated_at && (
-          <span className="task-updated">
-            Updated: {new Date(task.updated_at).toLocaleDateString()}
-          </span>
+      <div className="pdp-task-meta">
+        {task.pr_link && (
+          <span className="pdp-task-badge pr">PR Linked</span>
         )}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pdp-chevron">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
       </div>
     </Link>
   )
 }
-
-// Import ProjectForm
-import ProjectForm from '../components/ProjectForm'
 
 export default ProjectDetailPage

@@ -370,7 +370,7 @@ async def run_semantic_map_regeneration(
                 "graph_file": str(output_file.relative_to(mapper_dir)) if output_file.exists() else None
             }
             
-            # If graph was created, include summary
+            # If graph was created, include summary and auto-index to ChromaDB
             if output_file.exists():
                 try:
                     graph_data = json.loads(output_file.read_text())
@@ -378,6 +378,30 @@ async def run_semantic_map_regeneration(
                         "nodes_count": len(graph_data.get("nodes", [])),
                         "edges_count": len(graph_data.get("edges", [])),
                     }
+                    
+                    # Automatically index the graph to ChromaDB for semantic search
+                    if success:
+                        try:
+                            logger.info(f"📝 Auto-indexing semantic graph for persona: {persona_name}")
+                            # Import GraphQueries here to avoid circular imports
+                            import sys
+                            mapper_dir_str = str(mapper_dir)
+                            if mapper_dir_str not in sys.path:
+                                sys.path.insert(0, mapper_dir_str)
+                            
+                            from graph_queries import GraphQueries
+                            
+                            # Index the persona-specific graph
+                            queries = GraphQueries(persona=persona_name)
+                            queries.index_graph_to_chromadb(force_reindex=True)
+                            logger.info(f"✅ Successfully auto-indexed graph for persona: {persona_name}")
+                            result["indexed"] = True
+                        except Exception as index_error:
+                            # Don't fail the whole regeneration if indexing fails
+                            logger.warning(f"⚠️  Failed to auto-index graph for persona {persona_name}: {index_error}")
+                            logger.debug(traceback.format_exc())
+                            result["indexed"] = False
+                            result["index_error"] = str(index_error)
                 except Exception as e:
                     logger.warning(f"Could not parse semantic graph for {persona_name}: {e}")
             
@@ -607,12 +631,15 @@ def parse_task_file(task_path: Path) -> Dict[str, Any]:
                     break
                 desc_lines.append(lines[j])
             description = '\n'.join(desc_lines).strip()
-        elif 'PR Link' in line or 'pr_link' in line.lower() or '## PR Link' in line:
-            # Try to extract PR link
+        elif 'PR Link' in line or 'pr_link' in line.lower() or '## PR Link' in line or line.strip().lower() == 'pr:':
+            # Try to extract PR link from this line or next few lines
             for j in range(i, min(i + 3, len(lines))):
                 if 'http' in lines[j]:
-                    pr_link = lines[j].strip()
-                    break
+                    # Extract just the URL (handle cases like "PR: https://..." or just "https://...")
+                    url_match = re.search(r'(https?://[^\s]+)', lines[j])
+                    if url_match:
+                        pr_link = url_match.group(1)
+                        break
     
     # Extract task ID from file header first (most reliable)
     # Look for "# TASK-X:" pattern in the first few lines
@@ -732,7 +759,6 @@ async def run_semantic_mapper(task_id: str, execution_id: str, project_config: O
                 if persona_names:
                     env["PROJECT_PERSONAS"] = ",".join(persona_names)
                     # Also store full persona objects as JSON for gateway instructions access
-                    import json
                     env["PROJECT_PERSONAS_FULL"] = json.dumps(personas)
         
         # Run semantic mapper
@@ -811,7 +837,6 @@ async def run_context_processor(task_id: str, execution_id: str, project_config:
                         persona_names.append(p)
                 if persona_names:
                     env["PROJECT_PERSONAS"] = ",".join(persona_names)
-                    import json
                     env["PROJECT_PERSONAS_FULL"] = json.dumps(personas)
         
         # Find the task file matching task_id
@@ -854,9 +879,43 @@ async def run_context_processor(task_id: str, execution_id: str, project_config:
         
         logger.info(f"Using task file: {task_file_path} for task_id: {task_id}")
         
-        # Run context processor with the specific task file
+        # Determine the correct semantic graph to use
+        # Priority: 1. First persona from project config, 2. Look for any persona graph, 3. Default
+        graph_file = "semantic_graph.json"  # Default
+        
+        if project_config:
+            personas = project_config.get("PERSONAS", [])
+            if personas:
+                # Get first persona name
+                first_persona = personas[0]
+                if isinstance(first_persona, dict):
+                    persona_name = first_persona.get("name", "")
+                else:
+                    persona_name = first_persona
+                
+                if persona_name:
+                    # Check if persona-specific graph exists (case-insensitive)
+                    for graph_path in mapper_dir.glob("semantic_graph_*.json"):
+                        if persona_name.lower() in graph_path.name.lower():
+                            graph_file = graph_path.name
+                            logger.info(f"Using persona-specific graph: {graph_file}")
+                            break
+        
+        # Fallback: if no persona graph found, check if any persona graph exists
+        if graph_file == "semantic_graph.json":
+            persona_graphs = list(mapper_dir.glob("semantic_graph_*.json"))
+            if persona_graphs:
+                # Use the most recently modified one
+                persona_graphs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                graph_file = persona_graphs[0].name
+                logger.info(f"Using most recent persona graph: {graph_file}")
+        
+        # Run context processor with the specific task file and graph
+        cmd = ["uv", "run", "python", str(script_path), str(task_file_path), "--graph", graph_file]
+        logger.info(f"Running context processor: {' '.join(cmd)}")
+        
         process = await asyncio.create_subprocess_exec(
-            "uv", "run", "python", str(script_path), str(task_file_path),
+            *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,  # Combine stderr with stdout
             cwd=str(mapper_dir),
@@ -966,7 +1025,6 @@ async def run_executor(task_id: str, execution_id: str, mission_file: Optional[s
                         persona_names.append(p)
                 if persona_names:
                     env["PROJECT_PERSONAS"] = ",".join(persona_names)
-                    import json
                     env["PROJECT_PERSONAS_FULL"] = json.dumps(personas)
         import os
         env = os.environ.copy()

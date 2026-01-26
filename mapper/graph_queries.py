@@ -18,16 +18,36 @@ except ImportError:
 class GraphQueries:
     """Helper class for querying semantic graph and ChromaDB."""
     
-    def __init__(self, graph_path: str = "semantic_graph.json", 
-                 chromadb_path: str = "agent_memory"):
+    def __init__(self, graph_path: str = None, 
+                 chromadb_path: str = "agent_memory",
+                 persona: Optional[str] = None):
         """Initialize query interface.
         
         Args:
-            graph_path: Path to semantic_graph.json
+            graph_path: Path to semantic_graph.json (if None, auto-detects based on persona)
             chromadb_path: Path to ChromaDB storage
+            persona: Optional persona name (e.g., 'Reseller', 'Distributor') to load persona-specific graph
         """
-        self.graph_path = Path(__file__).parent / graph_path
+        self.persona = persona
         self.chromadb_path = Path(__file__).parent / chromadb_path
+        
+        # Determine graph file path
+        mapper_dir = Path(__file__).parent
+        
+        if graph_path:
+            # Explicit path provided
+            self.graph_path = Path(__file__).parent / graph_path
+        elif persona:
+            # Load persona-specific graph (case-insensitive)
+            self.graph_path = self._find_persona_graph(mapper_dir, persona)
+            if not self.graph_path:
+                raise FileNotFoundError(
+                    f"Persona graph not found for '{persona}'. "
+                    f"Expected: semantic_graph_{persona}.json"
+                )
+        else:
+            # Default to semantic_graph.json
+            self.graph_path = mapper_dir / "semantic_graph.json"
         
         # Load graph
         if not self.graph_path.exists():
@@ -35,6 +55,10 @@ class GraphQueries:
         
         with open(self.graph_path, 'r') as f:
             self.graph = json.load(f)
+        
+        print(f"✅ Loaded graph from: {self.graph_path.name}")
+        if persona:
+            print(f"   Persona: {persona}")
         
         # Connect to ChromaDB (optional)
         if CHROMADB_AVAILABLE and self.chromadb_path.exists():
@@ -51,18 +75,73 @@ class GraphQueries:
             self.chroma_client = None
             self.collection = None
     
+    def _find_persona_graph(self, mapper_dir: Path, persona_name: str) -> Optional[Path]:
+        """Find persona graph file case-insensitively."""
+        # Try exact match first
+        exact_file = mapper_dir / f"semantic_graph_{persona_name}.json"
+        if exact_file.exists():
+            return exact_file
+        
+        # Try case-insensitive search
+        target_name_lower = f"semantic_graph_{persona_name.lower()}.json"
+        available_files = list(mapper_dir.glob("semantic_graph_*.json"))
+        
+        for file_path in available_files:
+            if file_path.name.lower() == target_name_lower:
+                return file_path
+        
+        return None
+    
+    # --- Persona Queries ---
+    
+    def filter_by_persona(self, persona: str) -> List[Dict[str, Any]]:
+        """Filter nodes by persona.
+        
+        Args:
+            persona: Persona name to filter by
+        
+        Returns:
+            List of nodes belonging to this persona
+        """
+        results = []
+        for node in self.graph.get("nodes", []):
+            node_persona = node.get("context", {}).get("persona")
+            if node_persona and node_persona.lower() == persona.lower():
+                results.append(node)
+        return results
+    
+    def get_personas_in_graph(self) -> List[str]:
+        """Get list of all personas present in the graph.
+        
+        Returns:
+            List of unique persona names
+        """
+        personas = set()
+        for node in self.graph.get("nodes", []):
+            node_persona = node.get("context", {}).get("persona")
+            if node_persona:
+                personas.add(node_persona)
+        return sorted(list(personas))
+    
     # --- Component Queries ---
     
-    def find_component_by_role(self, role: str) -> Optional[Dict[str, Any]]:
+    def find_component_by_role(self, role: str, persona: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Find a component by its semantic role.
         
         Args:
             role: Component role (e.g., "create_item_form")
+            persona: Optional persona name to filter by
         
         Returns:
             Component dict or None
         """
         for node in self.graph["nodes"]:
+            # Filter by persona if specified
+            if persona:
+                node_persona = node.get("context", {}).get("persona")
+                if not node_persona or node_persona.lower() != persona.lower():
+                    continue
+            
             for component in node.get("components", []):
                 if component.get("role") == role:
                     return {**component, "_node": node}
@@ -189,9 +268,20 @@ class GraphQueries:
                 return node
         return None
     
-    def get_all_nodes(self) -> List[Dict[str, Any]]:
-        """Get all nodes in the graph."""
-        return self.graph.get("nodes", [])
+    def get_all_nodes(self, persona: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get all nodes in the graph.
+        
+        Args:
+            persona: Optional persona name to filter by
+        
+        Returns:
+            List of nodes (filtered by persona if specified)
+        """
+        nodes = self.graph.get("nodes", [])
+        if persona:
+            return [node for node in nodes 
+                   if node.get("context", {}).get("persona", "").lower() == persona.lower()]
+        return nodes
     
     # --- API Queries ---
     
@@ -423,12 +513,13 @@ class GraphQueries:
         
         print(f"✅ Successfully indexed {total} nodes into ChromaDB")
     
-    def semantic_search(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    def semantic_search(self, query: str, n_results: int = 5, persona: Optional[str] = None) -> List[Dict[str, Any]]:
         """Search for nodes using semantic vector search (ChromaDB).
         
         Args:
             query: Natural language query like "dashboard with opportunities"
             n_results: Number of results to return
+            persona: Optional persona name to filter results by (defaults to self.persona if set)
         
         Returns:
             List of matching entries with metadata
@@ -439,10 +530,33 @@ class GraphQueries:
                 "Run: queries.index_graph_to_chromadb() to index the graph first."
             )
         
+        # Use instance persona if not provided
+        filter_persona = persona or self.persona
+        
         try:
+            # Check if collection has any data
+            try:
+                count = self.collection.count()
+                if count == 0:
+                    raise RuntimeError(
+                        "ChromaDB collection is empty. "
+                        "Run: queries.index_graph_to_chromadb() to index the graph first."
+                    )
+            except Exception:
+                pass  # count() might fail, continue anyway
+            
+            # Build where clause for persona filtering
+            where_clause = None
+            if filter_persona:
+                where_clause = {"persona": {"$eq": filter_persona}}
+            
+            # Get more results if filtering, then filter down
+            query_n_results = n_results * 3 if filter_persona else n_results
+            
             results = self.collection.query(
                 query_texts=[query],
-                n_results=n_results,
+                n_results=query_n_results,
+                where=where_clause,
                 include=["documents", "metadatas", "distances"]
             )
             
@@ -458,7 +572,13 @@ class GraphQueries:
                     "description": results["documents"][0][i]
                 })
             
-            return formatted
+            # Filter by persona if specified (in case where clause didn't work or persona not in metadata)
+            if filter_persona:
+                formatted = [r for r in formatted 
+                           if r["metadata"].get("persona", "").lower() == filter_persona.lower()]
+            
+            # Return top n_results
+            return formatted[:n_results]
         except Exception as e:
             raise RuntimeError(f"ChromaDB search failed: {e}")
     
@@ -632,15 +752,42 @@ if __name__ == "__main__":
     
     console = Console()
     
+    # Parse persona argument if provided
+    persona = None
+    args = sys.argv[1:]  # Copy args to avoid modifying sys.argv during iteration
+    
+    # Handle --persona flag
+    if "--persona" in args:
+        persona_idx = args.index("--persona")
+        if persona_idx + 1 < len(args):
+            persona = args[persona_idx + 1]
+            # Remove --persona and its value from args
+            args = args[:persona_idx] + args[persona_idx + 2:]
+    
+    # Handle --search as alias for search command
+    if "--search" in args:
+        search_idx = args.index("--search")
+        # Replace --search with search
+        args[search_idx] = "search"
+    
     try:
-        queries = GraphQueries()
+        queries = GraphQueries(persona=persona)
+        
+        # Show persona info if loaded
+        if persona:
+            console.print(f"[green]✅ Loaded graph for persona: {persona}[/green]\n")
+        else:
+            personas = queries.get_personas_in_graph()
+            if personas:
+                console.print(f"[cyan]ℹ️  Available personas in graph: {', '.join(personas)}[/cyan]")
+                console.print(f"[dim]   Use --persona <name> to filter queries[/dim]\n")
     except FileNotFoundError as e:
         console.print(f"[red]❌ {e}[/red]")
         console.print("[yellow]Run semantic_mapper.py first to generate the graph[/yellow]")
         sys.exit(1)
     
-    if len(sys.argv) > 1:
-        command = sys.argv[1]
+    if len(args) > 0:
+        command = args[0]
         
         if command == "summary":
             queries.print_summary()
@@ -671,10 +818,11 @@ if __name__ == "__main__":
             except Exception as e:
                 console.print(f"[red]❌ Indexing failed: {e}[/red]\n")
         
-        elif command == "search" and len(sys.argv) > 2:
-            query = " ".join(sys.argv[2:])
+        elif command == "search" and len(args) > 1:
+            query = " ".join(args[1:])
             try:
-                results = queries.semantic_search(query)
+                # Pass persona to search if it was set
+                results = queries.semantic_search(query, persona=persona)
                 
                 console.print(f"\n[bold cyan]🔎 Semantic Search: '{query}'[/bold cyan]\n")
                 if not results:
@@ -698,14 +846,38 @@ if __name__ == "__main__":
             except Exception as e:
                 console.print(f"[red]❌ Search failed: {e}[/red]\n")
         
+        elif command == "personas":
+            personas = queries.get_personas_in_graph()
+            console.print("\n[bold cyan]👥 Personas in Graph:[/bold cyan]\n")
+            if personas:
+                for p in personas:
+                    node_count = len(queries.filter_by_persona(p))
+                    console.print(f"  • {p}: {node_count} nodes")
+            else:
+                console.print("[yellow]No personas found in graph[/yellow]")
+            console.print()
+        
         else:
-            console.print("[red]Unknown command[/red]")
+            # Check if user might have used --search instead of search
+            if args and args[0] == "--search":
+                console.print("[yellow]⚠️  Use 'search' (not '--search') as the command[/yellow]")
+                console.print("[dim]   Example: python graph_queries.py --persona Reseller search 'query'[/dim]\n")
+            else:
+                console.print(f"[red]Unknown command: {args[0] if args else 'none'}[/red]")
+            
             console.print("\nUsage:")
-            console.print("  python graph_queries.py summary")
-            console.print("  python graph_queries.py apis")
-            console.print("  python graph_queries.py tables")
-            console.print("  python graph_queries.py index          # Index graph to ChromaDB for semantic search")
-            console.print("  python graph_queries.py search <query> # Semantic search (requires indexing first)")
+            console.print("  python graph_queries.py [--persona <name>] <command> [arguments]")
+            console.print("\nCommands:")
+            console.print("  summary                    # Print graph summary")
+            console.print("  personas                   # List all personas in graph")
+            console.print("  apis                       # List all API endpoints")
+            console.print("  tables                     # List all database tables")
+            console.print("  index                      # Index graph to ChromaDB for semantic search")
+            console.print("  search <query>             # Semantic search (requires indexing first)")
+            console.print("\nExamples:")
+            console.print("  python graph_queries.py --persona Reseller summary")
+            console.print("  python graph_queries.py --persona Distributor search 'dashboard'")
+            console.print("  python graph_queries.py search 'Demand Activation'")
     
     else:
         queries.print_summary()

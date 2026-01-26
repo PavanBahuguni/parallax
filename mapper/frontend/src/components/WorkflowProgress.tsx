@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import LogViewer from '../components/LogViewer'
+import AnsiRenderer from '../utils/AnsiRenderer'
 import './WorkflowProgress.css'
 
 export interface WorkflowUpdate {
@@ -15,11 +17,44 @@ interface WorkflowProgressProps {
   onComplete?: (success: boolean) => void
 }
 
+interface StepState {
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
+  message: string
+  logs: string[]
+}
+
+const PIPELINE_STEPS = ['analyze', 'map', 'generate-mission', 'execute'] as const
+
 export default function WorkflowProgress({ taskId, executionId, onComplete }: WorkflowProgressProps) {
   const [updates, setUpdates] = useState<WorkflowUpdate[]>([])
-  const [ws, setWs] = useState<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
+  const [expandedStep, setExpandedStep] = useState<string | null>(null)
+  const logsEndRef = useRef<HTMLDivElement>(null)
   
+  // Derive workflow status from updates
+  let workflowStatus: 'idle' | 'running' | 'completed' | 'failed' = 'idle'
+  
+  // Aggregate updates by step
+  const stepStates: Record<string, StepState> = {}
+  PIPELINE_STEPS.forEach(step => {
+    stepStates[step] = { status: 'pending', message: '', logs: [] }
+  })
+  
+  updates.forEach(update => {
+    if (update.step === 'workflow') {
+      if (update.status === 'running') workflowStatus = 'running'
+      else if (update.status === 'completed') workflowStatus = 'completed'
+      else if (update.status === 'failed') workflowStatus = 'failed'
+      return
+    }
+    
+    if (stepStates[update.step]) {
+      stepStates[update.step].status = update.status
+      stepStates[update.step].message = update.message
+      stepStates[update.step].logs.push(update.message)
+    }
+  })
+
   // Load historical updates from execution if available
   useEffect(() => {
     if (executionId) {
@@ -35,7 +70,6 @@ export default function WorkflowProgress({ taskId, executionId, onComplete }: Wo
       if (response.ok) {
         const execution = await response.json()
         if (execution.result?.updates && Array.isArray(execution.result.updates)) {
-          // Merge with existing updates, avoiding duplicates
           setUpdates((prev) => {
             const existingTimestamps = new Set(prev.map(u => u.timestamp))
             const newUpdates = execution.result.updates.filter((u: WorkflowUpdate) => 
@@ -53,28 +87,18 @@ export default function WorkflowProgress({ taskId, executionId, onComplete }: Wo
   }
 
   useEffect(() => {
-    // Connect to WebSocket
-    // Use ws://localhost:8001 directly (not proxied through Vite)
     const wsUrl = `ws://localhost:8001/ws/tasks/${taskId}`
-    console.log('Connecting to WebSocket:', wsUrl)
     const websocket = new WebSocket(wsUrl)
 
     websocket.onopen = () => {
-      console.log('WebSocket connected')
       setConnected(true)
-      setWs(websocket)
     }
 
     websocket.onmessage = (event) => {
       try {
-        // Handle pong response
-        if (event.data === 'pong') {
-          return
-        }
+        if (event.data === 'pong') return
         
         const update: WorkflowUpdate = JSON.parse(event.data)
-        console.log('WebSocket update received:', update)
-        // Add new update, avoiding duplicates by timestamp
         setUpdates((prev) => {
           const exists = prev.some(u => u.timestamp === update.timestamp)
           if (exists) return prev
@@ -83,28 +107,19 @@ export default function WorkflowProgress({ taskId, executionId, onComplete }: Wo
           )
         })
         
-        // Check if workflow is complete
         if (update.step === 'workflow' && (update.status === 'completed' || update.status === 'failed')) {
           if (onComplete) {
             onComplete(update.status === 'completed')
           }
         }
       } catch (err) {
-        console.error('Error parsing WebSocket message:', err, event.data)
+        console.error('Error parsing WebSocket message:', err)
       }
     }
 
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      setConnected(false)
-    }
+    websocket.onerror = () => setConnected(false)
+    websocket.onclose = () => setConnected(false)
 
-    websocket.onclose = () => {
-      console.log('WebSocket disconnected')
-      setConnected(false)
-    }
-
-    // Send ping every 30 seconds to keep connection alive
     const pingInterval = setInterval(() => {
       if (websocket.readyState === WebSocket.OPEN) {
         websocket.send('ping')
@@ -117,66 +132,169 @@ export default function WorkflowProgress({ taskId, executionId, onComplete }: Wo
     }
   }, [taskId, onComplete])
 
+  // Auto-scroll logs
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [updates])
+
+  const getStepLabel = (step: string) => {
+    const labels: Record<string, string> = {
+      'analyze': 'Analyze',
+      'map': 'Map',
+      'generate-mission': 'Generate',
+      'execute': 'Execute'
+    }
+    return labels[step] || step
+  }
+
+  const getStepDescription = (step: string) => {
+    const descriptions: Record<string, string> = {
+      'analyze': 'Analyze PR changes',
+      'map': 'Semantic mapping',
+      'generate-mission': 'Generate test plan',
+      'execute': 'Execute tests'
+    }
+    return descriptions[step] || step
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return '✅'
-      case 'failed':
-        return '❌'
-      case 'running':
-        return '🔄'
-      case 'skipped':
-        return '⏭️'
-      default:
-        return '⏳'
+      case 'completed': return '✓'
+      case 'failed': return '✗'
+      case 'running': return ''
+      case 'skipped': return '—'
+      default: return ''
     }
   }
 
-  const getStatusClass = (status: string) => {
-    return `status-${status}`
+  const currentStepIndex = PIPELINE_STEPS.findIndex(s => stepStates[s].status === 'running')
+  const completedSteps = PIPELINE_STEPS.filter(s => 
+    stepStates[s].status === 'completed' || stepStates[s].status === 'skipped'
+  ).length
+
+  // Determine active step for live output (running step, or last completed/failed if none running)
+  let activeStep = PIPELINE_STEPS[0]
+  const runningStep = PIPELINE_STEPS.find(s => stepStates[s].status === 'running')
+  if (runningStep) {
+    activeStep = runningStep
+  } else {
+    // Find last non-pending step
+    const reversedSteps = [...PIPELINE_STEPS].reverse()
+    const lastActive = reversedSteps.find(s => stepStates[s].status !== 'pending')
+    if (lastActive) {
+      activeStep = lastActive
+    }
   }
 
-  const getStepName = (step: string) => {
-    const stepNames: Record<string, string> = {
-      'analyze': 'Analyzing Changes',
-      'map': 'Semantic Mapping',
-      'generate-mission': 'Generating Mission',
-      'execute': 'Executing Tests',
-      'workflow': 'Workflow'
-    }
-    return stepNames[step] || step
-  }
+  // Filter updates for the active step
+  const activeStepUpdates = updates.filter(u => u.step === activeStep)
 
   return (
-    <div className="workflow-progress">
-      <div className="workflow-progress-header">
-        <h3>🤖 Automated Workflow Progress</h3>
-        <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
-          {connected ? '🟢 Connected' : '🔴 Disconnected'}
-        </span>
-      </div>
-      
-      {updates.length === 0 ? (
-        <div className="workflow-progress-empty">
-          Waiting for updates...
+    <div className="workflow-progress-v2">
+      {/* Header */}
+      <div className="wp-header">
+        <div className="wp-title">
+          <h3>Test Execution Pipeline</h3>
+          <span className={`wp-badge ${workflowStatus}`}>
+            {workflowStatus === 'running' && <span className="wp-spinner" />}
+            {workflowStatus.charAt(0).toUpperCase() + workflowStatus.slice(1)}
+          </span>
         </div>
-      ) : (
-        <div className="workflow-progress-list">
-          {updates.map((update, index) => (
-            <div key={index} className={`workflow-update ${getStatusClass(update.status)}`}>
-              <div className="update-header">
-                <span className="update-icon">{getStatusIcon(update.status)}</span>
-                <span className="update-step">{getStepName(update.step)}</span>
-                <span className="update-status">{update.status}</span>
-              </div>
-              <div className="update-message">{update.message}</div>
-              {update.data && Object.keys(update.data).length > 0 && (
-                <div className="update-data">
-                  <pre>{JSON.stringify(update.data, null, 2)}</pre>
+        <div className={`wp-connection ${connected ? 'connected' : ''}`}>
+          <span className="wp-dot" />
+          {connected ? 'Live' : 'Disconnected'}
+        </div>
+      </div>
+
+      {/* Pipeline Steps */}
+      <div className="wp-pipeline">
+        {PIPELINE_STEPS.map((step, index) => {
+          const state = stepStates[step]
+          const isActive = state.status === 'running'
+          const isDone = state.status === 'completed' || state.status === 'skipped'
+          const isFailed = state.status === 'failed'
+          
+          return (
+            <div key={step} className="wp-step-wrapper">
+              <div 
+                className={`wp-step ${state.status} ${expandedStep === step ? 'expanded' : ''}`}
+                onClick={() => setExpandedStep(expandedStep === step ? null : step)}
+              >
+                <div className={`wp-step-icon ${state.status}`}>
+                  {isActive ? (
+                    <span className="wp-step-spinner" />
+                  ) : (
+                    <span>{getStatusIcon(state.status) || (index + 1)}</span>
+                  )}
                 </div>
+                <div className="wp-step-info">
+                  <span className="wp-step-label">{getStepLabel(step)}</span>
+                  <span className="wp-step-desc">{getStepDescription(step)}</span>
+                </div>
+              </div>
+              {index < PIPELINE_STEPS.length - 1 && (
+                <div className={`wp-connector ${isDone || isFailed ? state.status : ''}`} />
               )}
             </div>
-          ))}
+          )
+        })}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="wp-progress-bar">
+        <div 
+          className={`wp-progress-fill ${workflowStatus}`}
+          style={{ width: `${(completedSteps / PIPELINE_STEPS.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Expanded Step Details */}
+      {expandedStep && stepStates[expandedStep].logs.length > 0 && (
+        <div className="wp-step-details">
+          <div className="wp-step-details-header">
+            <span>{getStepLabel(expandedStep)} Logs</span>
+            <button onClick={() => setExpandedStep(null)}>×</button>
+          </div>
+          <div className="wp-step-logs">
+            <LogViewer logs={stepStates[expandedStep].logs} variant="full" />
+          </div>
+        </div>
+      )}
+
+      {/* Live Logs Terminal */}
+      {updates.length > 0 && (
+        <div className="wp-terminal">
+          <div className="wp-terminal-header">
+            <span className="wp-terminal-title">Live Output: {getStepLabel(activeStep)}</span>
+            <div className="wp-terminal-dots">
+              <span /><span /><span />
+            </div>
+          </div>
+          <div className="wp-terminal-body">
+            {activeStepUpdates.slice(-15).map((update, i) => (
+              <div key={i} className={`wp-terminal-line ${update.status}`}>
+                <span className="wp-terminal-time">
+                  {new Date(update.timestamp).toLocaleTimeString('en-US', { 
+                    hour12: false, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                  })}
+                </span>
+                <span className="wp-terminal-msg">
+                  <AnsiRenderer text={update.message} />
+                </span>
+              </div>
+            ))}
+            <div ref={logsEndRef} />
+          </div>
+        </div>
+      )}
+
+      {updates.length === 0 && (
+        <div className="wp-empty">
+          <div className="wp-empty-icon">⏳</div>
+          <p>Waiting for workflow to start...</p>
         </div>
       )}
     </div>

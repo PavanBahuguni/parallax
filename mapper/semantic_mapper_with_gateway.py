@@ -481,11 +481,14 @@ OUTPUT REQUIREMENTS:
 - Allowed actions: {sorted(list(ALLOWED_ACTIONS))}
 - Every click/fill/select/wait_visible must include "selector".
 
-SELECTOR PRIORITY (for buttons/links mentioned in instructions):
-1. **If instructions mention button/link TEXT** (e.g., "Click on 'Log In With My Nutanix' button"), use text-based selector: `:has-text('Log In With My Nutanix')` or `button:has-text('Log In With My Nutanix')`
-2. **If snapshot shows aria-label** for the element, use: `[aria-label='...']`
-3. **If snapshot shows id**, use: `#id`
-4. **If snapshot shows data-testid**, use: `[data-testid='...']`
+SELECTOR PRIORITY (CRITICAL - for buttons/links mentioned in instructions):
+1. **ALWAYS prefer ID if available** - If snapshot shows `id` attribute (e.g., `id="legend-link-Expansion"`), use: `#legend-link-Expansion`
+   - This is especially important for elements with dynamic text content (e.g., "$24.88M (58)" which changes over time)
+   - IDs are stable and don't change when content updates
+2. **If snapshot shows data-testid**, use: `[data-testid='...']`
+3. **If snapshot shows aria-label**, use: `[aria-label='...']`
+4. **Only use text-based selectors as last resort** - If instructions mention button/link TEXT and no ID/data-testid/aria-label is available, use: `:has-text('Text')` or `button:has-text('Text')`
+   - **WARNING**: Avoid text selectors for dynamic content like currency values, counts, percentages, etc.
 
 EXACT TEXT MATCHING (CRITICAL):
 - **If instructions say "exactly" or "exact match"** (e.g., "click on div exactly having CDW"), you MUST use exact text matching
@@ -496,7 +499,7 @@ EXACT TEXT MATCHING (CRITICAL):
   ```
 - The `exact_match: true` flag ensures only elements with text content exactly equal to 'CDW' (not 'CDW US' or 'CDW Canada') are selected
 
-IMPORTANT: When instructions mention button text in natural language (e.g., "Click on 'X' button"), prefer text-based selectors over aria-label/id unless the snapshot clearly shows a better selector.
+IMPORTANT: When instructions mention button text in natural language (e.g., "Click on 'X' button"), ALWAYS check the snapshot for ID/data-testid/aria-label FIRST. Only use text-based selectors if no stable identifier is available. This is critical for elements with dynamic content (currency, counts, etc.).
 
 ACTION SELECTION RULES (CRITICAL - FOLLOW THESE EXACTLY):
 
@@ -1991,6 +1994,21 @@ class SemanticMapperWithPersona(SemanticMapper):
         
         print(f"\n🔍 Discovering: {url}")
         
+        # Validate URL - detect if it's an API URL instead of a UI URL
+        # API URLs should not be stored as node URLs - they should be captured as active_apis
+        api_url_patterns = ['/api/', '/graphql', '/v1/', '/v2/', '/rest/', '/query']
+        url_is_api = any(pattern in url for pattern in api_url_patterns)
+        
+        if url_is_api:
+            print(f"   ⚠️ Warning: URL appears to be an API endpoint: {url}")
+            print(f"   ⚠️ This may cause issues - node URLs should be UI paths, not API endpoints")
+            # Try to use the actual browser URL which might be the correct UI URL
+            actual_browser_url = page.url
+            if actual_browser_url != url and not any(pattern in actual_browser_url for pattern in api_url_patterns):
+                print(f"   🔧 Using actual browser URL instead: {actual_browser_url}")
+                url = actual_browser_url
+                self.visited_urls.add(url)  # Also mark corrected URL as visited
+        
         # Record start time for API correlation
         start_time = asyncio.get_event_loop().time()
         
@@ -2159,11 +2177,50 @@ Focus on the structure, purpose, and type of information displayed.
         await self.enrich_components_with_apis(components, start_time, end_time)
         
         # Get active APIs (APIs called during page load)
-        active_apis = [
-            f"{log['method']} {log['url'].replace(CONFIG['API_BASE'], '')}"
-            for log in self.network_log
-            if log["type"] == "request" and start_time <= log["timestamp"] <= end_time
-        ]
+        # Normalize API URLs to extract meaningful endpoint paths
+        active_apis = []
+        for log in self.network_log:
+            if log["type"] == "request" and start_time <= log["timestamp"] <= end_time:
+                log_url = log['url']  # Use different variable name to not overwrite page url
+                method = log['method']
+                
+                # Extract endpoint path from URL
+                try:
+                    from urllib.parse import urlparse, parse_qs, urlencode
+                    parsed = urlparse(log_url)
+                    endpoint_path = parsed.path
+                    
+                    # Remove API_BASE if present
+                    api_base = CONFIG.get('API_BASE', '')
+                    if api_base and endpoint_path.startswith(api_base):
+                        endpoint_path = endpoint_path.replace(api_base, '')
+                    
+                    # If endpoint_path is empty or just '/', use the full path
+                    if not endpoint_path or endpoint_path == '/':
+                        endpoint_path = parsed.path
+                    
+                    # Add query params if present, but FILTER OUT pagination/sorting params
+                    # These change frequently and shouldn't be part of the API signature
+                    if parsed.query:
+                        query_params = parse_qs(parsed.query, keep_blank_values=True)
+                        # Remove pagination and sorting params
+                        pagination_params = ['page', 'limit', 'offset', 'size', 'pageSize', 'per_page',
+                                           'sortBy', 'sortOrder', 'sort', 'order', 'orderBy', 'direction',
+                                           'skip', 'take', 'cursor', 'after', 'before']
+                        filtered_params = {k: v for k, v in query_params.items() 
+                                         if k.lower() not in [p.lower() for p in pagination_params]}
+                        if filtered_params:
+                            # Flatten single-value lists for cleaner output
+                            clean_params = {k: v[0] if len(v) == 1 else v for k, v in filtered_params.items()}
+                            endpoint_path = f"{endpoint_path}?{urlencode(clean_params, doseq=True)}"
+                    
+                    api_endpoint = f"{method} {endpoint_path}"
+                    active_apis.append(api_endpoint)
+                except Exception as e:
+                    # Fallback: use full URL if parsing fails
+                    api_endpoint = f"{method} {log_url}"
+                    active_apis.append(api_endpoint)
+        
         active_apis = list(set(active_apis))  # Remove duplicates
         
         # Extract primary entity from APIs, URL, or components
@@ -2171,6 +2228,17 @@ Focus on the structure, purpose, and type of information displayed.
         
         # Create node with description field and headers
         node_id = semantic_name or f"page_{len(self.graph['nodes'])}"
+        
+        # Also aggregate into graph-level api_endpoints
+        for api in active_apis:
+            if api not in self.graph['api_endpoints']:
+                self.graph['api_endpoints'][api] = {
+                    "method": api.split(' ', 1)[0] if ' ' in api else 'GET',
+                    "endpoint": api.split(' ', 1)[1] if ' ' in api else api,
+                    "nodes": []
+                }
+            if node_id not in self.graph['api_endpoints'][api]["nodes"]:
+                self.graph['api_endpoints'][api]["nodes"].append(node_id)
         node = {
             "id": node_id,
             "url": url,
@@ -2197,13 +2265,15 @@ Focus on the structure, purpose, and type of information displayed.
         
         # Create edge if there's a parent
         if parent_url:
-            self.graph["edges"].append({
+            edge_data = {
                 "from": parent_url,
                 "to": url,
                 "action": action,
                 "selector": None,
                 "link_text": link_text  # Link text passed as parameter (e.g., "Marketing", "Sales")
-            })
+            }
+            # Note: link_id will be added when edge is updated from discovered links
+            self.graph["edges"].append(edge_data)
             if link_text:
                 print(f"   🔗 Created edge with link text: '{link_text}' ({parent_url} → {url})")
         
@@ -2220,24 +2290,34 @@ Focus on the structure, purpose, and type of information displayed.
         Priority: id > data-testid > href > stable text > parent selectors
         """
         # Priority 1: Use id or data-testid if available (most stable)
+        # ALWAYS prefer id/data-testid over text, especially when text contains dynamic values
+        # This is critical for links with dynamic content like "$24.88M (58)"
+        # IDs are stable identifiers that don't change when content updates
         if link_id:
+            # Use ID selector - most stable, works even when text/href changes
             return f"a#{link_id}"
         if data_testid:
             return f"a[data-testid='{data_testid}']"
         
-        # Priority 2: Use href attribute (usually stable)
+        # Priority 2: Use href attribute (usually stable, but less preferred than ID)
+        # NOTE: If href has query parameters and we have an ID, ID should have been used above
+        # This is a fallback when no ID/data-testid is available
         if href:
             # Clean href for selector (escape special chars)
             href_clean = href.replace("'", "\\'").replace('"', '\\"')
+            # For hrefs with query params, prefer ID if available (but we're here because no ID)
             return f"a[href='{href_clean}']"
         
         # Priority 3: Check if text is dynamic
+        # If id is available, ALWAYS use it - don't even check for dynamic text
+        # This ensures we use stable identifiers when available
         dynamic_patterns = [
-            r'\$[\d.,]+[KM]?',  # Currency like $1.05M, $78.91K
-            r'\(\d+\)',  # Counts like (1), (3)
+            r'\$[\d.,]+[KMkm]?',  # Currency like $1.05M, $78.91K, $24.88M
+            r'\(\d+\)',  # Counts like (1), (3), (58)
             r'\d{4}-\d{2}-\d{2}',  # Dates
             r'\d+%',  # Percentages
-            r'\d+\.\d+[KM]?',  # Numbers with K/M suffix
+            r'\d+\.\d+[KMkm]?',  # Numbers with K/M suffix
+            r'\$[\d.,]+[KMkm]?\s*\(\d+\)',  # Combined: $24.88M (58)
         ]
         
         is_dynamic = any(re.search(pattern, text) for pattern in dynamic_patterns)
@@ -2293,6 +2373,96 @@ Focus on the structure, purpose, and type of information displayed.
         
         return "a[href]"  # Generic fallback
     
+    async def _wait_for_dynamic_widgets(self, page: Page, timeout: int = 10000) -> None:
+        """
+        Wait for dynamic widget content to render before extracting links.
+        
+        Many React/Vue apps load data asynchronously and render widgets after the initial page load.
+        This method waits for common widget patterns (charts, dashboards, data tables) to appear.
+        
+        The goal is to capture links inside dynamically rendered components like:
+        - Donut/pie chart legends with navigation links
+        - Dashboard widgets with data-driven links
+        - Tables with action links
+        """
+        widget_selectors = [
+            # Donut/pie chart legends with links
+            '[class*="DonutChart"] a[href]',
+            '[class*="legend"] a[href]',
+            '[class*="Legend"] a[href]',
+            '[id*="legend"] a[href]',
+            
+            # Dashboard widgets
+            '[class*="dashboard"] a[href]',
+            '[class*="Dashboard"] a[href]',
+            '[class*="widget"] a[href]',
+            '[class*="Widget"] a[href]',
+            
+            # Data tables with links
+            '[class*="table"] a[href]',
+            'table a[href]',
+            
+            # Charts/graphs
+            '[class*="chart"] a[href]',
+            '[class*="Chart"] a[href]',
+            
+            # Recharts (common React charting library)
+            '.recharts-wrapper a[href]',
+            '.recharts-legend a[href]',
+            
+            # Nivo (another React charting library)
+            '[class*="nivo"] a[href]',
+            
+            # General data-driven content
+            '[class*="card"] a[href]',
+            '[class*="Card"] a[href]',
+        ]
+        
+        print(f"   ⏳ Waiting for dynamic widgets to render...")
+        
+        # Strategy: Wait until at least one widget selector finds links, or timeout
+        start_time = asyncio.get_event_loop().time()
+        max_wait_seconds = timeout / 1000
+        found_widgets = False
+        
+        while not found_widgets:
+            elapsed = asyncio.get_event_loop().time() - start_time
+            if elapsed >= max_wait_seconds:
+                print(f"   ⚠️  Timeout waiting for dynamic widgets (continuing anyway)")
+                break
+            
+            # Check if any widget selectors find links
+            for selector in widget_selectors:
+                try:
+                    elements = await page.query_selector_all(selector)
+                    if elements and len(elements) > 0:
+                        # Verify at least one element is visible
+                        for el in elements[:3]:  # Check first 3
+                            try:
+                                is_visible = await el.is_visible()
+                                if is_visible:
+                                    href = await el.get_attribute('href')
+                                    if href and href.startswith('/'):
+                                        print(f"   ✅ Found dynamic widget link: {selector} ({len(elements)} links)")
+                                        found_widgets = True
+                                        break
+                            except:
+                                continue
+                        if found_widgets:
+                            break
+                except:
+                    continue
+            
+            if not found_widgets:
+                await asyncio.sleep(0.5)  # Wait 500ms before checking again
+        
+        # Give a bit more time for any final rendering
+        if found_widgets:
+            await asyncio.sleep(0.5)
+        else:
+            # Even if we didn't find widgets, wait a bit for potential late-loading content
+            await asyncio.sleep(1)
+    
     async def discover_navigation_links(self, page: Page) -> List[Dict[str, str]]:
         """
         Override to use custom base_url and add domain filtering + stable selectors.
@@ -2314,6 +2484,11 @@ Focus on the structure, purpose, and type of information displayed.
             await page.wait_for_load_state("domcontentloaded", timeout=5000)
         except:
             pass  # If it times out, page might already be loaded, continue anyway
+        
+        # STEP 0.5: Wait for dynamic widget content (charts, dashboards) to render
+        # React components that fetch data asynchronously may not have rendered yet
+        # Wait for common widget/chart selectors that indicate content has loaded
+        await self._wait_for_dynamic_widgets(page)
         
         # STEP 1: Open dropdown menus to discover links inside them
         await self._open_dropdown_menus(page)
@@ -2428,22 +2603,49 @@ Focus on the structure, purpose, and type of information displayed.
                         base = current_url.rsplit('/', 1)[0] if '/' in current_url else self.base_url
                         full_url = f"{base}/{href}"
                     
+                    # IMPROVEMENT 3: Build stable selector (avoids dynamic text)
+                    # Always prefer id/data-testid over text, especially for dynamic values
+                    # Do this BEFORE checking visited URLs so we have the selector ready
+                    selector = await self._build_stable_selector(link, text, href, link_id, data_testid)
+                    
                     # FILTER OUT: Already visited URLs (prevent duplicate visits)
-                    # Normalize URL for comparison (remove trailing slashes, lowercase)
+                    # BUT: If link has an ID, we should still capture it as an edge even if URL was visited
+                    # This is important for category links (e.g., Expansion, New Logo) that point to same base URL
                     normalized_url = full_url.rstrip('/').lower()
                     visited_normalized = {u.rstrip('/').lower() for u in self.visited_urls}
-                    if normalized_url in visited_normalized:
-                        print(f"   ⏭️  Skipping already visited URL: {full_url}")
-                        continue  # Skip already visited links
+                    url_already_visited = normalized_url in visited_normalized
                     
-                    # IMPROVEMENT 3: Build stable selector (avoids dynamic text)
-                    selector = await self._build_stable_selector(link, text, href, link_id, data_testid)
+                    if url_already_visited:
+                        # If link has an ID, we should still add it to links list for edge creation
+                        # (even though we won't visit the page again)
+                        if link_id:
+                            print(f"   📌 URL already visited but link has ID '{link_id}' - will create edge with ID selector")
+                            # Continue to add link below (don't skip) - we'll create edge but not visit
+                        else:
+                            print(f"   ⏭️  Skipping already visited URL: {full_url}")
+                            continue  # Skip already visited links without ID
+                    
+                    # Log selector choice for debugging
+                    if link_id and selector.startswith(f"a#{link_id}"):
+                        print(f"   ✅ Using ID selector for link: #{link_id} (text: '{text[:30]}...', href: '{href[:50]}...')")
+                    elif data_testid and f"[data-testid='{data_testid}']" in selector:
+                        print(f"   ✅ Using data-testid selector: [data-testid='{data_testid}'] (text: '{text[:30]}...')")
+                    elif any(re.search(pattern, text) for pattern in [
+                        r'\$[\d.,]+[KMkm]?', r'\(\d+\)', r'\$[\d.,]+[KMkm]?\s*\(\d+\)'
+                    ]):
+                        if link_id or data_testid:
+                            print(f"   ✅ Link has ID/data-testid, using stable selector (text has dynamic content: '{text[:50]}')")
+                        else:
+                            print(f"   ⚠️  Link has dynamic text but no ID: '{text[:50]}' (href: '{href[:50]}...') - using text/href selector")
                     
                     links.append({
                         "url": full_url,
                         "text": text,  # Keep original text for display/logging
-                        "selector": selector,  # Use stable selector
-                        "href": href
+                        "selector": selector,  # Use stable selector (prioritizes id)
+                        "href": href,
+                        "link_id": link_id,  # Store ID for edge metadata
+                        "data_testid": data_testid,  # Store data-testid for edge metadata
+                        "skip_visit": url_already_visited and link_id  # Mark to skip visit but create edge
                     })
             
             # Also discover JavaScript-based navigation links (no href, uses role="link" or click handlers)
@@ -2541,18 +2743,35 @@ Focus on the structure, purpose, and type of information displayed.
                     selector = None
                     selector_fallbacks = []
                     
+                    # Priority 1: Use id if available (most stable, especially for dynamic content)
                     if link_id:
                         selector = f"#{link_id}"
                         selector_fallbacks.append(f"[id='{link_id}']")
+                        # Don't use text if id is available - id is always more stable
                     
+                    # Priority 2: Use data-testid if available
                     if data_testid:
                         if not selector:
                             selector = f"[data-testid='{data_testid}']"
                         selector_fallbacks.append(f"[data-testid='{data_testid}']")
                     
+                    # Priority 3: Use text only if no id/data-testid available
+                    # Check if text contains dynamic values (currency, counts, etc.)
                     if text:
                         text_clean = text.replace("'", "\\'").replace('"', '\\"')
-                        # Try multiple text-based selectors
+                        
+                        # Check if text is dynamic - if so, prefer other selectors
+                        dynamic_patterns = [
+                            r'\$[\d.,]+[KMkm]?',  # Currency like $24.88M
+                            r'\(\d+\)',  # Counts like (58)
+                            r'\$[\d.,]+[KMkm]?\s*\(\d+\)',  # Combined: $24.88M (58)
+                        ]
+                        is_dynamic = any(re.search(pattern, text) for pattern in dynamic_patterns)
+                        
+                        if is_dynamic and not selector:
+                            print(f"   ⚠️  JS nav link has dynamic text but no ID: '{text[:50]}' - will try class/parent selectors")
+                        
+                        # Try multiple text-based selectors (only if no id/data-testid)
                         text_selectors = [
                             f"a[role='link']:has-text('{text_clean}')",  # Most specific
                             f"[role='link']:has-text('{text_clean}')",  # More general
@@ -2993,7 +3212,12 @@ Focus on the structure, purpose, and type of information displayed.
             if link_url.startswith(self.base_url):
                 # Normalize URL for comparison
                 normalized_link_url = link_url.rstrip('/').lower()
+                # If link has an ID, we should still process it for edge creation (even if URL visited)
                 if normalized_link_url not in visited_normalized:
+                    internal_links.append(link)
+                elif link.get('link_id'):
+                    # URL was visited but link has ID - still add for edge creation (won't visit again)
+                    print(f"   📌 URL already visited but link has ID '{link.get('link_id')}' - will create edge")
                     internal_links.append(link)
                 else:
                     print(f"   ⏭️  Skipping already visited URL: {link_url}")
@@ -3039,7 +3263,12 @@ Focus on the structure, purpose, and type of information displayed.
                 # Non-parameterized route - check if already visited (normalized comparison)
                 normalized_link_url = link['url'].rstrip('/').lower()
                 visited_normalized = {u.rstrip('/').lower() for u in self.visited_urls}
+                # If link has an ID, we should still process it for edge creation (even if URL visited)
                 if normalized_link_url not in visited_normalized:
+                    non_template_links.append(link)
+                elif link.get('link_id'):
+                    # URL was visited but link has ID - still add for edge creation (won't visit again)
+                    print(f"   📌 URL already visited but link has ID '{link.get('link_id')}' - will create edge")
                     non_template_links.append(link)
                 else:
                     print(f"   ⏭️  Skipping already visited URL: {link['url']}")
@@ -3088,10 +3317,23 @@ Focus on the structure, purpose, and type of information displayed.
                 
                 print(f"\n   🔗 Following: {link['text']} → {link['url']}")
                 
-                # Check if this is a JavaScript-based navigation link (no href)
-                is_js_nav = link.get('js_navigation', False) or link.get('href') is None
+                # Check if URL was already visited - if so, skip navigation but still create edge if link has ID
+                normalized_link_url = link['url'].rstrip('/').lower()
+                visited_normalized = {u.rstrip('/').lower() for u in self.visited_urls}
+                url_already_visited = normalized_link_url in visited_normalized
+                skip_navigation = url_already_visited and link.get('link_id')
                 
-                if is_js_nav:
+                if skip_navigation:
+                    print(f"   📌 URL already visited but link has ID '{link.get('link_id')}' - skipping navigation, will create edge")
+                    # Skip navigation but continue to edge creation below
+                else:
+                    # Check if this is a JavaScript-based navigation link (no href)
+                    is_js_nav = link.get('js_navigation', False) or link.get('href') is None
+                
+                if skip_navigation:
+                    # Skip navigation - URL already visited, but we'll still create edge
+                    pass
+                elif is_js_nav:
                     # For JS navigation links, click the element instead of using page.goto()
                     selector = link.get('selector')
                     link_text = link.get('text', '')
@@ -3214,7 +3456,12 @@ Focus on the structure, purpose, and type of information displayed.
                             continue  # Skip this link and continue
                 
                 # Recursively discover this page (will add to visited_urls and create node)
-                await self.discover_all_routes(page, link['url'], max_depth, current_depth + 1)
+                # Skip discovery if we're just creating an edge for an already-visited URL with ID
+                if not skip_navigation:
+                    await self.discover_all_routes(page, link['url'], max_depth, current_depth + 1)
+                else:
+                    # URL was already visited - just ensure node exists for edge creation
+                    print(f"   📌 Skipping discovery (already visited), ensuring node exists for edge with ID '{link.get('link_id')}'")
                 
                 # After discovery, create edge from current page to linked page
                 if current_node_id:
@@ -3272,25 +3519,538 @@ Focus on the structure, purpose, and type of information displayed.
                                     break
                             
                             if existing_edge:
-                                # Update existing edge with link text
+                                # Update existing edge with link text and metadata
                                 existing_edge['link_text'] = link_text
                                 existing_edge['action'] = action_type
                                 existing_edge['selector'] = link.get('selector')
+                                # Store ID and data-testid if available (for stable selectors)
+                                if link.get('link_id'):
+                                    existing_edge['link_id'] = link.get('link_id')
+                                if link.get('data_testid'):
+                                    existing_edge['data_testid'] = link.get('data_testid')
                                 print(f"      ✅ Updated edge with link text: '{link_text}' ({current_node_id} → {target_node_id})")
                             else:
-                                # Create new edge
-                                self.graph['edges'].append({
+                                # Create new edge with metadata
+                                edge_data = {
                                     "from": current_node_id,
                                     "to": target_node_id,
                                     "action": action_type,
                                     "selector": link.get('selector'),
                                     "link_text": link_text
-                                })
+                                }
+                                # Store ID and data-testid if available (for stable selectors)
+                                if link.get('link_id'):
+                                    edge_data['link_id'] = link.get('link_id')
+                                if link.get('data_testid'):
+                                    edge_data['data_testid'] = link.get('data_testid')
+                                self.graph['edges'].append(edge_data)
                                 print(f"      ✅ Created edge: '{link_text}' ({current_node_id} → {target_node_id})")
                 
             except Exception as e:
                 print(f"   ⚠️ Failed to follow link {link['url']}: {e}")
                 continue
+    
+    def deduplicate_nodes(self):
+        """
+        Remove duplicate nodes by ID, keeping the most complete version.
+        
+        When multiple nodes share the same ID, we keep the one with:
+        1. Most components
+        2. Most active_apis
+        3. Longest description
+        """
+        print("\n🔄 Deduplicating nodes by ID...")
+        
+        nodes = self.graph.get("nodes", [])
+        if not nodes:
+            return
+        
+        # Group nodes by ID
+        nodes_by_id: Dict[str, List[Dict]] = {}
+        for node in nodes:
+            node_id = node.get("id")
+            if node_id not in nodes_by_id:
+                nodes_by_id[node_id] = []
+            nodes_by_id[node_id].append(node)
+        
+        # Find duplicates
+        duplicate_ids = [nid for nid, group in nodes_by_id.items() if len(group) > 1]
+        
+        if not duplicate_ids:
+            print("   ✅ No duplicate nodes found")
+            return
+        
+        print(f"   ⚠️ Found {len(duplicate_ids)} duplicate node IDs:")
+        for dup_id in duplicate_ids:
+            print(f"      - {dup_id} ({len(nodes_by_id[dup_id])} instances)")
+        
+        # Build deduplicated node list
+        deduplicated_nodes = []
+        for node_id, group in nodes_by_id.items():
+            if len(group) == 1:
+                deduplicated_nodes.append(group[0])
+            else:
+                # Pick the "best" node - most components, then most APIs, then longest description
+                def node_score(n):
+                    return (
+                        len(n.get("components", [])),
+                        len(n.get("active_apis", [])),
+                        len(n.get("description", ""))
+                    )
+                best_node = max(group, key=node_score)
+                deduplicated_nodes.append(best_node)
+                print(f"   ✅ Kept best version of '{node_id}' ({len(best_node.get('components', []))} components)")
+        
+        original_count = len(nodes)
+        self.graph["nodes"] = deduplicated_nodes
+        print(f"   📊 Nodes: {original_count} → {len(deduplicated_nodes)} (removed {original_count - len(deduplicated_nodes)} duplicates)")
+    
+    def deduplicate_edges(self):
+        """
+        Remove duplicate edges based on (from, to, action) tuple.
+        """
+        print("\n🔄 Deduplicating edges...")
+        
+        edges = self.graph.get("edges", [])
+        if not edges:
+            return
+        
+        seen = set()
+        deduplicated_edges = []
+        duplicates_removed = 0
+        
+        for edge in edges:
+            # Create a key from the edge's essential properties
+            edge_key = (
+                edge.get("from"),
+                edge.get("to"),
+                edge.get("action"),
+                edge.get("selector"),
+                edge.get("link_text")
+            )
+            
+            if edge_key not in seen:
+                seen.add(edge_key)
+                deduplicated_edges.append(edge)
+            else:
+                duplicates_removed += 1
+        
+        if duplicates_removed > 0:
+            print(f"   ⚠️ Removed {duplicates_removed} duplicate edges")
+        else:
+            print("   ✅ No duplicate edges found")
+        
+        self.graph["edges"] = deduplicated_edges
+        print(f"   📊 Edges: {len(edges)} → {len(deduplicated_edges)}")
+    
+    def create_internal_edges_from_components(self):
+        """
+        Post-process the graph to create internal navigation edges from component data.
+        
+        This method scans each node's components to find navigation buttons/links that
+        trigger API calls. By matching these API calls to other nodes, we can infer
+        navigation paths and create edges with selectors.
+        
+        The logic:
+        1. Build a mapping from API endpoints to the nodes that use them
+        2. For each node, look at components with triggers_api
+        3. If a component's triggers_api matches another node's defining API, create an edge
+        4. Use the component's selector for deterministic navigation
+        """
+        print("\n" + "=" * 70)
+        print("🔗 Creating Internal Navigation Edges from Components")
+        print("=" * 70)
+        
+        nodes = self.graph.get("nodes", [])
+        api_endpoints = self.graph.get("api_endpoints", {})
+        existing_edges = self.graph.get("edges", [])
+        
+        # Build reverse mapping: API endpoint -> list of node IDs that use it
+        # This tells us which nodes are associated with which API calls
+        api_to_nodes = {}
+        for api_key, api_info in api_endpoints.items():
+            for node_id in api_info.get("nodes", []):
+                if api_key not in api_to_nodes:
+                    api_to_nodes[api_key] = []
+                api_to_nodes[api_key].append(node_id)
+        
+        # Also map URLs to nodes for matching
+        url_to_node = {}
+        for node in nodes:
+            node_id = node.get("id")
+            node_url = node.get("url", "")
+            if node_url:
+                url_to_node[node_url] = node_id
+                # Also map without query params for partial matching
+                if "?" in node_url:
+                    base_url = node_url.split("?")[0]
+                    if base_url not in url_to_node:
+                        url_to_node[base_url] = node_id
+        
+        print(f"   📊 Analyzing {len(nodes)} nodes for navigation components")
+        print(f"   📡 Tracking {len(api_endpoints)} API endpoints")
+        
+        edges_created = 0
+        
+        for source_node in nodes:
+            source_id = source_node.get("id")
+            components = source_node.get("components", [])
+            
+            # Skip external nodes
+            if source_node.get("is_external"):
+                continue
+            
+            for component in components:
+                triggers_api = component.get("triggers_api", [])
+                if not triggers_api:
+                    continue
+                
+                selector = component.get("selector")
+                text = component.get("text", "")
+                stable_text = component.get("stable_text", "")
+                role = component.get("role", "")
+                
+                # Skip components without meaningful text (likely utility buttons)
+                if not stable_text and not text:
+                    continue
+                
+                # Skip common non-navigation buttons
+                skip_roles = ["button_export", "button_feedback", "button_allow_all", "button_back_button"]
+                if role in skip_roles:
+                    continue
+                
+                # Find target nodes by matching API calls
+                target_candidates = set()
+                
+                for api_call in triggers_api:
+                    # Normalize API call to match api_endpoints keys
+                    # triggers_api format: "GET http://localhost:9000/api/v1/..."
+                    # api_endpoints key format: "GET /api/v1/..."
+                    
+                    # Extract method and path
+                    parts = api_call.split(" ", 1)
+                    if len(parts) != 2:
+                        continue
+                    method, full_url = parts
+                    
+                    # Extract path from full URL
+                    from urllib.parse import urlparse
+                    parsed = urlparse(full_url)
+                    path = parsed.path
+                    if parsed.query:
+                        path = f"{path}?{parsed.query}"
+                    
+                    api_key = f"{method} {path}"
+                    
+                    # Check if this API maps to any nodes
+                    if api_key in api_to_nodes:
+                        for node_id in api_to_nodes[api_key]:
+                            # Don't create self-loops
+                            if node_id != source_id:
+                                target_candidates.add(node_id)
+                    
+                    # Also try matching by URL directly
+                    if full_url in url_to_node:
+                        target_id = url_to_node[full_url]
+                        if target_id != source_id:
+                            target_candidates.add(target_id)
+                
+                # Create edges to target nodes
+                for target_id in target_candidates:
+                    # Check if edge already exists
+                    edge_exists = any(
+                        e.get("from") == source_id and e.get("to") == target_id
+                        for e in existing_edges
+                    )
+                    
+                    if not edge_exists:
+                        edge_data = {
+                            "from": source_id,
+                            "to": target_id,
+                            "action": "click",
+                            "selector": selector,
+                            "link_text": stable_text or text,
+                            "is_external": False,
+                            "component_role": role,
+                            "inferred_from": "component_triggers_api"
+                        }
+                        self.graph["edges"].append(edge_data)
+                        existing_edges.append(edge_data)  # Track to avoid duplicates
+                        edges_created += 1
+                        print(f"   ✅ Created edge: {source_id} --[{stable_text or text[:30]}]--> {target_id}")
+                        print(f"      Selector: {selector}")
+        
+        print(f"\n   📊 Created {edges_created} internal navigation edges from components")
+        
+        # NOTE: We do NOT create fallback edges for unreachable nodes because:
+        # 1. If we don't have a valid selector from the entrypoint, we can't create a deterministic navigation path
+        # 2. Using the destination page's display_header as link_text is wrong - that's not a navigation element
+        # 3. The navigation to those pages should be captured during the actual crawl when the mapper clicks menu items
+        #
+        # If pages are unreachable, it means the semantic mapper didn't capture the navigation path during crawling.
+        # The solution is to improve the crawling to capture sidebar/menu navigation, not to infer wrong edges.
+        
+        # Report unreachable nodes for debugging
+        entrypoints = self.graph.get("entrypoints", {})
+        entrypoint_ids = set(entrypoints.values())
+        
+        # Build adjacency list for reachability check
+        adjacency = {}
+        for edge in self.graph.get("edges", []):
+            if not edge.get("is_external", False):
+                from_id = edge.get("from")
+                to_id = edge.get("to")
+                if from_id not in adjacency:
+                    adjacency[from_id] = set()
+                adjacency[from_id].add(to_id)
+        
+        # BFS to find all nodes reachable from any entrypoint
+        reachable_from_entrypoint = set()
+        for entrypoint_id in entrypoint_ids:
+            queue = [entrypoint_id]
+            reachable_from_entrypoint.add(entrypoint_id)
+            while queue:
+                current = queue.pop(0)
+                for neighbor in adjacency.get(current, []):
+                    if neighbor not in reachable_from_entrypoint:
+                        reachable_from_entrypoint.add(neighbor)
+                        queue.append(neighbor)
+        
+        # Find internal nodes not reachable from entrypoint
+        unreachable_internal_nodes = []
+        for node in nodes:
+            node_id = node.get("id")
+            if (node_id not in reachable_from_entrypoint and 
+                not node.get("is_external")):
+                unreachable_internal_nodes.append(node)
+        
+        if unreachable_internal_nodes:
+            print(f"\n   ⚠️ Warning: {len(unreachable_internal_nodes)} internal nodes are not reachable from entrypoint:")
+            for node in unreachable_internal_nodes:
+                print(f"      - {node.get('id')} ({node.get('display_header', 'N/A')})")
+            print(f"   💡 These pages need navigation edges captured during crawling")
+        
+        print(f"\n   📊 Total internal edges created: {edges_created}")
+        return edges_created
+
+
+async def incremental_update(
+    persona: str,
+    pr_diff: Dict[str, Any],
+    base_url: str,
+    existing_graph_path: str,
+    output_path: str,
+    gateway_plan_path: Optional[str] = None,
+    headless: bool = False,
+    llm: Any = None
+) -> Dict[str, Any]:
+    """
+    Incrementally update semantic graph based on PR changes.
+    
+    1. Load existing graph
+    2. Identify affected nodes from PR diff (e.g., SalesDataOpportunities -> sales_bookings)
+    3. Navigate to those pages using existing edges
+    4. Re-capture only those nodes
+    5. Merge back into graph
+    
+    Args:
+        persona: Persona to use (Reseller, Distributor, etc.)
+        pr_diff: PR analysis with ui_changes, affected_pages, etc.
+        base_url: Base URL of the application
+        existing_graph_path: Path to existing semantic graph
+        output_path: Path to save updated graph
+        gateway_plan_path: Path to gateway plan JSON
+        headless: Whether to run browser in headless mode
+        llm: LLM instance for page analysis
+    
+    Returns:
+        Updated semantic graph
+    """
+    print("=" * 70)
+    print("🔄 INCREMENTAL SEMANTIC GRAPH UPDATE")
+    print("=" * 70)
+    
+    # Load existing graph
+    print(f"\n📂 Loading existing graph: {existing_graph_path}")
+    with open(existing_graph_path, 'r') as f:
+        graph = json.load(f)
+    
+    print(f"   Nodes: {len(graph.get('nodes', []))}")
+    print(f"   Edges: {len(graph.get('edges', []))}")
+    
+    # Identify affected nodes from PR diff
+    affected_node_ids = set()
+    ui_changes = pr_diff.get('ui_changes', [])
+    
+    # Common mappings from PR file/component names to node IDs
+    page_mappings = {
+        'salesdata': 'sales_bookings',
+        'sales': 'sales_bookings', 
+        'opportunity': 'sales_bookings',
+        'opportunities': 'sales_bookings',
+        'renewals': 'renewals_bookings',
+        'booking': 'sales_bookings',
+        'dashboard': 'partner_dashboard',
+    }
+    
+    print(f"\n🔍 Analyzing PR changes to find affected nodes...")
+    for change in ui_changes:
+        change_lower = change.lower()
+        for keyword, node_id in page_mappings.items():
+            if keyword in change_lower:
+                affected_node_ids.add(node_id)
+                print(f"   Found: '{keyword}' in '{change[:50]}...' -> {node_id}")
+    
+    # Also check pr_diff for explicit page references
+    for key in ['affected_pages', 'pages', 'components']:
+        pages = pr_diff.get(key, [])
+        if isinstance(pages, list):
+            for page in pages:
+                page_lower = page.lower() if isinstance(page, str) else ''
+                for keyword, node_id in page_mappings.items():
+                    if keyword in page_lower:
+                        affected_node_ids.add(node_id)
+    
+    if not affected_node_ids:
+        print("   ⚠️ No affected nodes identified, will update first internal node")
+        # Default to first internal node
+        for node in graph.get('nodes', []):
+            if not node.get('id', '').startswith('external_'):
+                affected_node_ids.add(node.get('id'))
+                break
+    
+    print(f"\n📋 Nodes to update: {list(affected_node_ids)}")
+    
+    # Find nodes and their URLs
+    nodes_to_update = []
+    node_by_id = {n['id']: n for n in graph.get('nodes', [])}
+    
+    for node_id in affected_node_ids:
+        if node_id in node_by_id:
+            nodes_to_update.append(node_by_id[node_id])
+        else:
+            print(f"   ⚠️ Node '{node_id}' not found in graph")
+    
+    if not nodes_to_update:
+        print("   ❌ No valid nodes to update")
+        return graph
+    
+    # Launch browser and navigate
+    print(f"\n🌐 Launching browser (headless={headless})...")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=headless)
+        context = await browser.new_context()
+        page = await context.new_page()
+        
+        # Execute gateway plan if provided
+        if gateway_plan_path and Path(gateway_plan_path).exists():
+            print(f"\n🔐 Executing gateway plan: {gateway_plan_path}")
+            with open(gateway_plan_path, 'r') as f:
+                gateway_plan = json.load(f)
+            
+            # Navigate to base URL first
+            await page.goto(base_url, wait_until="load", timeout=30000)
+            await asyncio.sleep(2)
+            
+            # Execute gateway steps
+            steps = gateway_plan.get('steps', [])
+            for i, step in enumerate(steps):
+                action = step.get('action', '')
+                selector = step.get('selector', '')
+                value = step.get('value', '')
+                text = step.get('text', '')
+                
+                # Resolve env() values
+                if value and value.startswith('env('):
+                    env_var = value[4:-1]
+                    value = os.getenv(env_var, '')
+                
+                try:
+                    if action == 'click':
+                        await page.wait_for_selector(selector, timeout=15000)
+                        await page.click(selector)
+                        await asyncio.sleep(1)
+                    elif action == 'fill':
+                        await page.wait_for_selector(selector, timeout=15000)
+                        await page.fill(selector, value)
+                    elif action == 'wait_visible':
+                        await page.wait_for_selector(selector, state='visible', timeout=15000)
+                    elif action == 'assert_url_contains':
+                        await asyncio.sleep(2)  # Wait for navigation
+                    
+                    print(f"   ✅ Step {i+1}: {action}")
+                except Exception as e:
+                    print(f"   ⚠️ Step {i+1} ({action}): {e}")
+            
+            print("   ✅ Gateway completed")
+        else:
+            # Just navigate to base URL
+            await page.goto(base_url, wait_until="load", timeout=30000)
+        
+        await asyncio.sleep(2)
+        
+        # Create mapper for component extraction
+        mapper = SemanticMapper(llm=llm, config=CONFIG)
+        
+        # Update each affected node
+        for node in nodes_to_update:
+            node_id = node.get('id')
+            node_url = node.get('url', '')
+            
+            print(f"\n🔄 Updating node: {node_id}")
+            print(f"   URL: {node_url}")
+            
+            # Navigate to the node's URL
+            try:
+                await page.goto(node_url, wait_until="load", timeout=30000)
+                await asyncio.sleep(3)  # Let dynamic content load
+                
+                # Wait for network idle
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+                except:
+                    pass
+                
+                print(f"   ✅ Navigated to page")
+                
+                # Re-extract components
+                print(f"   📊 Extracting components...")
+                components = await mapper.extract_semantic_components(page, node_url)
+                
+                print(f"   Found {len(components)} components")
+                
+                # Look for TCV or other new columns
+                tcv_found = False
+                for comp in components:
+                    comp_str = json.dumps(comp).lower()
+                    if 'tcv' in comp_str:
+                        tcv_found = True
+                        print(f"   ✅ Found TCV in component: {comp.get('role', 'unknown')}")
+                
+                if not tcv_found:
+                    print(f"   ⚠️ TCV not found in extracted components")
+                
+                # Update node in graph
+                for i, n in enumerate(graph['nodes']):
+                    if n['id'] == node_id:
+                        graph['nodes'][i]['components'] = components
+                        print(f"   ✅ Updated components for {node_id}")
+                        break
+                
+            except Exception as e:
+                print(f"   ❌ Failed to update {node_id}: {e}")
+        
+        await context.close()
+        await browser.close()
+    
+    # Save updated graph
+    print(f"\n💾 Saving updated graph to: {output_path}")
+    with open(output_path, 'w') as f:
+        json.dump(graph, f, indent=2)
+    
+    print(f"✅ Incremental update complete")
+    
+    return graph
 
 
 async def main():
@@ -3307,6 +4067,9 @@ async def main():
     parser.add_argument("--base-url", default=CONFIG["BASE_URL"], help="Base URL to open")
     parser.add_argument("--headless", default="false", help="true|false")
     parser.add_argument("--max-depth", type=int, default=3)
+    parser.add_argument("--incremental", action="store_true", help="Incremental update mode - only update nodes affected by PR")
+    parser.add_argument("--existing-graph", default=None, help="Path to existing graph for incremental update")
+    parser.add_argument("--affected-pages", default=None, help="Comma-separated list of affected page keywords (e.g., 'sales,opportunity')")
     parser.add_argument("--skip-gateway", action="store_true")
     parser.add_argument("--force-recompile-gateway", action="store_true", help="Force recompilation of gateway plan even if cached plan exists")
     parser.add_argument("--llm-provider", default="nutanix", choices=["nutanix", "ollama"], help="LLM provider to use for page analysis (many calls)")
@@ -3317,6 +4080,7 @@ async def main():
     print(f"📋 Configuration:")
     print(f"   Persona: {args.persona}")
     print(f"   Base URL: {args.base_url}")
+    print(f"   Incremental Mode: {args.incremental}")
     print(f"   Page Analysis LLM: {args.llm_provider}")
     print(f"   Gateway Compilation LLM: {args.gateway_llm_provider}")
     print(f"   Gateway Instructions: {args.gateway_instructions or 'None'}")
@@ -3332,6 +4096,65 @@ async def main():
         print(f"✅ Loaded .env from {env_file}")
     else:
         print(f"⚠️  No .env file found at {env_file}")
+    
+    # Handle incremental update mode
+    if args.incremental:
+        print("\n" + "=" * 70)
+        print("🔄 INCREMENTAL UPDATE MODE")
+        print("=" * 70)
+        
+        # Determine existing graph path
+        existing_graph = args.existing_graph
+        if not existing_graph:
+            # Try to find existing graph for this persona
+            persona_graph = Path(__file__).parent / f"semantic_graph_{args.persona}.json"
+            default_graph = Path(__file__).parent / "semantic_graph.json"
+            if persona_graph.exists():
+                existing_graph = str(persona_graph)
+            elif default_graph.exists():
+                existing_graph = str(default_graph)
+            else:
+                print("❌ No existing graph found. Run full mapping first.")
+                return
+        
+        print(f"   Existing graph: {existing_graph}")
+        
+        # Build PR diff from affected-pages argument
+        pr_diff = {'ui_changes': []}
+        if args.affected_pages:
+            pages = args.affected_pages.split(',')
+            pr_diff['ui_changes'] = [f"Changes to {p.strip()}" for p in pages]
+            print(f"   Affected pages: {pages}")
+        
+        # Initialize LLM
+        if args.llm_provider == "nutanix":
+            api_url = os.getenv("NUTANIX_API_URL")
+            api_key = os.getenv("NUTANIX_API_KEY")
+            model = os.getenv("NUTANIX_MODEL", "openai/gpt-oss-120b")
+            llm = FixedNutanixChatModel(api_url=api_url, api_key=api_key, model_name=model)
+        else:
+            from langchain_community.llms import Ollama
+            llm = Ollama(model=args.ollama_model)
+        
+        # Determine gateway plan path
+        gateway_plan = args.gateway_plan
+        if not gateway_plan:
+            gateway_plan = Path(__file__).parent / "temp" / f"gateway_plan_{args.persona}.json"
+            if not gateway_plan.exists():
+                gateway_plan = None
+        
+        # Run incremental update
+        await incremental_update(
+            persona=args.persona,
+            pr_diff=pr_diff,
+            base_url=args.base_url,
+            existing_graph_path=existing_graph,
+            output_path=args.output,
+            gateway_plan_path=str(gateway_plan) if gateway_plan else None,
+            headless=headless,
+            llm=llm
+        )
+        return
 
     # Initialize LLM for page analysis (many calls)
     print(f"\n🤖 Initializing Page Analysis LLM ({args.llm_provider})...")
@@ -3769,6 +4592,16 @@ async def main():
 
         # Merge parameterized nodes (existing method)
         mapper.merge_parameterized_nodes()
+        
+        # Deduplicate nodes by ID (keep the most complete version)
+        mapper.deduplicate_nodes()
+        
+        # Deduplicate edges 
+        mapper.deduplicate_edges()
+        
+        # Create internal navigation edges from component data
+        # This infers navigation paths by matching component triggers_api to node APIs
+        mapper.create_internal_edges_from_components()
 
         # Tag all nodes with persona context if missing
         for n in mapper.graph.get("nodes", []):

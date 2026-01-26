@@ -306,12 +306,36 @@ What is this form's purpose? Respond with ONLY a short role name (e.g., "create_
             })
         
         # Extract buttons (outside forms)
+        # Skip pagination, sorting, and utility buttons that aren't meaningful for navigation
         buttons = await page.query_selector_all('button:not(form button)')
         for i, btn in enumerate(buttons):
             btn_text = (await btn.inner_text()).strip()
             btn_id = await btn.get_attribute('id')
-            btn_class = await btn.get_attribute('class')
+            btn_class = await btn.get_attribute('class') or ""
             btn_data_testid = await btn.get_attribute('data-testid')
+            btn_aria_label = await btn.get_attribute('aria-label') or ""
+            
+            # FILTER OUT: Pagination buttons
+            pagination_indicators = ['next page', 'previous page', 'first page', 'last page', 
+                                    'page-nav', 'pagination', 'chevron', 'arrow']
+            is_pagination = any(ind in btn_aria_label.lower() or ind in btn_class.lower() 
+                               for ind in pagination_indicators)
+            if is_pagination:
+                continue
+            
+            # FILTER OUT: Sorting buttons
+            sorting_indicators = ['sorter', 'sort-order', 'sort-asc', 'sort-desc', 'ntnx-sorter',
+                                 'up-down-icon', 'ascending', 'descending']
+            is_sorting = any(ind in btn_class.lower() or ind in btn_aria_label.lower() 
+                            for ind in sorting_indicators)
+            if is_sorting:
+                continue
+            
+            # FILTER OUT: Column resize/drag buttons
+            resize_indicators = ['resize', 'drag', 'grip', 'handle']
+            is_resize = any(ind in btn_class.lower() for ind in resize_indicators)
+            if is_resize:
+                continue
             
             # Extract stable text (remove dynamic content like counts, prices)
             # Pattern: "Products (6)" -> "Products", "Cart (0) - $0.00" -> "Cart"
@@ -390,7 +414,26 @@ What is this form's purpose? Respond with ONLY a short role name (e.g., "create_
 Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_menu").
 """
                 semantic_role = await self.analyze_with_llm(llm_prompt)
+                # Sanitize LLM response - extract only the first word/phrase, remove explanations
                 semantic_role = semantic_role.strip().lower().replace(' ', '_')
+                # If LLM returned a long explanation, extract just the first identifier
+                if len(semantic_role) > 50 or '\n' in semantic_role:
+                    # Try to extract a reasonable role name from the response
+                    first_line = semantic_role.split('\n')[0]
+                    # Look for common patterns like "xxx_list", "xxx_table"
+                    # Note: 're' module is imported at module level
+                    match = re.search(r'\b([a-z_]+(?:_list|_table|_menu|_items|_data))\b', first_line)
+                    if match:
+                        semantic_role = match.group(1)
+                    else:
+                        # Fallback: use first few words
+                        words = re.findall(r'[a-z]+', first_line[:30])
+                        semantic_role = '_'.join(words[:3]) if words else f"list_{i}"
+                # Final cleanup - remove any non-alphanumeric except underscore
+                semantic_role = re.sub(r'[^a-z0-9_]', '', semantic_role)
+                # Ensure it's not empty
+                if not semantic_role:
+                    semantic_role = f"list_{i}"
                 
                 # Get tag name properly (await the coroutine)
                 tag_name = await lst.evaluate("el => el.tagName")
@@ -405,45 +448,242 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
                     "impacts_db": None
                 })
         
+        # Extract table column headers (th elements) - important for data verification
+        # Handle nested structure: th > div > span.title > text (Nutanix UI pattern)
+        tables = await page.query_selector_all('table')
+        for table_idx, table in enumerate(tables):
+            # Get all th elements (column headers)
+            headers = await table.query_selector_all('th')
+            for h_idx, header in enumerate(headers):
+                # Try multiple ways to get the header text (handles th > div > span structure)
+                header_text = ""
+                try:
+                    # First priority: span.title (Nutanix UI pattern: th > div > span.title)
+                    title_span = await header.query_selector('span.title')
+                    if title_span:
+                        header_text = (await title_span.inner_text()).strip()
+                    
+                    # Second priority: span.ntnx-text-label (another Nutanix pattern)
+                    if not header_text:
+                        label_span = await header.query_selector('span.ntnx-text-label')
+                        if label_span:
+                            header_text = (await label_span.inner_text()).strip()
+                    
+                    # Third priority: any span inside
+                    if not header_text:
+                        span = await header.query_selector('span')
+                        if span:
+                            header_text = (await span.inner_text()).strip()
+                    
+                    # Fallback: get direct inner text
+                    if not header_text:
+                        header_text = (await header.inner_text()).strip()
+                    
+                    # Clean up: remove newlines and extra spaces
+                    header_text = ' '.join(header_text.split())
+                except:
+                    header_text = ""
+                
+                if not header_text or len(header_text) > 50:
+                    continue
+                
+                # Get any aria-label or title
+                aria_label = await header.get_attribute('aria-label') or ""
+                title_attr = await header.get_attribute('title') or ""
+                
+                # Generate selector - prefer text-based for stability
+                # Use th:has-text for the outer element
+                selector = f"th:has-text('{header_text}')"
+                
+                # Check for sortable attribute
+                is_sortable = await header.evaluate("""
+                    el => el.classList.contains('sortable') || 
+                          el.hasAttribute('data-sortable') ||
+                          el.querySelector('.sort-icon, .sorter, [class*="sort"]') !== null
+                """)
+                
+                # Generate role
+                role_base = header_text.lower().replace(' ', '_').replace('(', '').replace(')', '')
+                role_base = re.sub(r'[^a-z0-9_]', '', role_base)
+                semantic_role = f"column_{role_base}"
+                
+                components.append({
+                    "type": "table_column",
+                    "role": semantic_role,
+                    "selector": selector,
+                    "text": header_text,
+                    "table_index": table_idx,
+                    "column_index": h_idx,
+                    "is_sortable": is_sortable,
+                    "aria_label": aria_label,
+                    "title": title_attr
+                })
+        
+        # Also extract column headers from div-based tables (common in modern apps)
+        # Look for elements with role="columnheader" or class patterns like "header", "column-header", etc.
+        # Nutanix UI uses custom table components with various class patterns
+        column_header_selectors = [
+            # Nutanix-specific patterns (high priority - exact match from DOM inspection)
+            'th[class*="opportunitiesTableColumnHeader"] span.title',
+            'th[class*="TableColumnHeader"] span.title',
+            'th span.title.ntnx-text-label',
+            'th div span.title',
+            # Generic patterns
+            '[role="columnheader"]',
+            '.column-header',
+            '.table-header-cell',
+            '.ntnx-header-cell',
+            '[class*="HeaderCell"]',
+            '[class*="header-cell"]',
+            '[class*="ntnx-cell-header"]',
+            '.ntnx-table-header span.title',
+            '[class*="columnHeader"]',
+            '[class*="table-head"] span',
+            '[class*="grid-header"] span',
+            '.ant-table-column-title',
+            '.ag-header-cell-text',
+            '[data-column-id]',
+            # More Nutanix-specific patterns
+            '[class*="SortableTableCell"] span.title',
+            '[class*="Header---"] span.title',
+        ]
+        
+        for selector_pattern in column_header_selectors:
+            try:
+                column_headers = await page.query_selector_all(selector_pattern)
+                for h_idx, header in enumerate(column_headers):
+                    header_text = (await header.inner_text()).strip()
+                    if not header_text or len(header_text) > 50:  # Skip empty or very long text
+                        continue
+                    
+                    # Skip duplicates
+                    existing_texts = [c.get('text', '').lower() for c in components if c.get('type') == 'table_column']
+                    if header_text.lower() in existing_texts:
+                        continue
+                    
+                    # Generate selector
+                    selector = f":has-text('{header_text}')"
+                    
+                    role_base = header_text.lower().replace(' ', '_').replace('(', '').replace(')', '')
+                    role_base = re.sub(r'[^a-z0-9_]', '', role_base)
+                    semantic_role = f"column_{role_base}"
+                    
+                    components.append({
+                        "type": "table_column",
+                        "role": semantic_role,
+                        "selector": selector,
+                        "text": header_text,
+                        "column_index": h_idx,
+                        "is_div_table": True
+                    })
+            except Exception as e:
+                pass  # Skip invalid selectors
+        
         return components
     
     async def setup_network_interception(self, page: Page):
         """Setup network interception to capture API calls."""
         
+        def is_api_request(url: str, resource_type: str = None) -> bool:
+            """Determine if a request is an API call (not a static asset)."""
+            # Skip static assets
+            static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot']
+            if any(url.lower().endswith(ext) for ext in static_extensions):
+                return False
+            
+            # Skip resource types that are typically static assets
+            if resource_type in ['image', 'stylesheet', 'font', 'media']:
+                return False
+            
+            # Capture requests that look like API calls:
+            # 1. URLs containing /api/ or /api/
+            # 2. URLs ending with common API patterns
+            # 3. Requests to the same domain as BASE_URL (likely API endpoints)
+            # 4. Requests with JSON/XML content types
+            base_url = self.config.get("BASE_URL", "")
+            api_base = self.config.get("API_BASE", "")
+            
+            url_lower = url.lower()
+            
+            # Check for API patterns
+            if '/api/' in url_lower or url_lower.endswith('/api'):
+                return True
+            
+            # Check if URL matches API_BASE
+            if api_base and api_base in url:
+                return True
+            
+            # Check if URL is on same domain as BASE_URL (likely API endpoint)
+            if base_url:
+                try:
+                    from urllib.parse import urlparse
+                    base_parsed = urlparse(base_url)
+                    url_parsed = urlparse(url)
+                    # Same domain and not a static file
+                    if base_parsed.netloc == url_parsed.netloc:
+                        # Check if it's not a static asset path
+                        path = url_parsed.path.lower()
+                        if not any(path.endswith(ext) for ext in static_extensions):
+                            # Likely an API call if it's not a common static path
+                            if not path.startswith(('/static/', '/assets/', '/_next/', '/favicon')):
+                                return True
+                except:
+                    pass
+            
+            # Check for common API indicators
+            if any(indicator in url_lower for indicator in ['/graphql', '/rest/', '/v1/', '/v2/', '/endpoint']):
+                return True
+            
+            return False
+        
         async def handle_request(request: Request):
             """Capture outgoing API requests."""
-            api_base = self.config.get("API_BASE", "")
-            if api_base and api_base in request.url or "localhost:8000" in request.url:
+            resource_type = request.resource_type
+            if is_api_request(request.url, resource_type):
                 self.network_log.append({
                     "type": "request",
                     "method": request.method,
                     "url": request.url,
+                    "resource_type": resource_type,
+                    "headers": dict(request.headers) if hasattr(request, 'headers') else {},
                     "timestamp": asyncio.get_event_loop().time()
                 })
                 print(f"   📤 {request.method} {request.url}")
         
         async def handle_response(response: Response):
             """Capture API responses."""
-            api_base = self.config.get("API_BASE", "")
-            if api_base and api_base in response.url or "localhost:8000" in response.url:
+            request = response.request
+            if is_api_request(response.url, request.resource_type):
                 try:
                     status = response.status
                     # Try to get response body (may fail for some responses)
                     body = None
-                    try:
-                        body = await response.json()
-                    except:
-                        pass
+                    content_type = response.headers.get('content-type', '').lower()
+                    
+                    # Only try to parse JSON if content-type indicates JSON
+                    if 'application/json' in content_type:
+                        try:
+                            body = await response.json()
+                        except:
+                            try:
+                                # Fallback: try to get text and parse
+                                text = await response.text()
+                                if text:
+                                    import json
+                                    body = json.loads(text)
+                            except:
+                                pass
                     
                     self.network_log.append({
                         "type": "response",
-                        "method": response.request.method,
+                        "method": request.method,
                         "url": response.url,
                         "status": status,
+                        "content_type": content_type,
                         "body": body,
                         "timestamp": asyncio.get_event_loop().time()
                     })
-                    print(f"   📥 {response.status} {response.request.method} {response.url}")
+                    print(f"   📥 {status} {request.method} {response.url}")
                 except Exception as e:
                     print(f"   ⚠️ Error capturing response: {e}")
         
@@ -452,11 +692,18 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
     
     async def enrich_components_with_apis(self, components: List[Dict], start_time: float, end_time: float):
         """Link captured API calls to the components that triggered them."""
+        from urllib.parse import urlparse, parse_qs, urlencode
+        
         # Get API calls that happened during this page's interaction
         page_apis = [
             log for log in self.network_log 
             if start_time <= log["timestamp"] <= end_time
         ]
+        
+        # Pagination/sorting params to filter out (these change frequently)
+        pagination_params = ['page', 'limit', 'offset', 'size', 'pageSize', 'per_page',
+                           'sortBy', 'sortOrder', 'sort', 'order', 'orderBy', 'direction',
+                           'skip', 'take', 'cursor', 'after', 'before']
         
         for component in components:
             # Match APIs based on timing and type
@@ -478,11 +725,29 @@ Respond with ONLY a short name (e.g., "items_list", "user_table", "navigation_me
                 # Buttons could trigger any type of request
                 relevant_apis = [api for api in page_apis if api["type"] == "request"]
             
-            # Store unique API endpoints
+            # Store unique API endpoints (with pagination params stripped)
             unique_endpoints = set()
             api_base = self.config.get("API_BASE", "")
             for api in relevant_apis:
-                endpoint = api["url"].replace(api_base, "") if api_base else api["url"]
+                raw_url = api["url"]
+                endpoint = raw_url.replace(api_base, "") if api_base else raw_url
+                
+                # Strip pagination/sorting params from the endpoint
+                try:
+                    parsed = urlparse(endpoint)
+                    if parsed.query:
+                        query_params = parse_qs(parsed.query, keep_blank_values=True)
+                        # Remove pagination and sorting params
+                        filtered_params = {k: v for k, v in query_params.items() 
+                                         if k.lower() not in [p.lower() for p in pagination_params]}
+                        if filtered_params:
+                            clean_params = {k: v[0] if len(v) == 1 else v for k, v in filtered_params.items()}
+                            endpoint = f"{parsed.path}?{urlencode(clean_params, doseq=True)}"
+                        else:
+                            endpoint = parsed.path
+                except:
+                    pass  # Keep original endpoint if parsing fails
+                
                 unique_endpoints.add(f"{api['method']} {endpoint}")
             
             component["triggers_api"] = list(unique_endpoints)

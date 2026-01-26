@@ -28,17 +28,11 @@ function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
     setError(null)
 
     try {
-      const data = {
-        ...formData,
-        // Personas are already in the correct format from PersonasSection
-      }
-
       if (project) {
-        await api.updateProject(project.id, data as ProjectUpdate)
+        await api.updateProject(project.id, formData as ProjectUpdate)
       } else {
-        await api.createProject(data as ProjectCreate)
+        await api.createProject(formData as ProjectCreate)
       }
-
       onSuccess()
     } catch (err: any) {
       setError(err.message || 'Failed to save project')
@@ -52,24 +46,29 @@ function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
   }
 
   return (
-    <div className="project-form">
-      <div className="form-header">
-        <h2>{project ? 'Edit Project' : 'Create New Project'}</h2>
-        <button className="close-btn" onClick={onClose}>
-          ×
-        </button>
-      </div>
+    <form className="pf" onSubmit={handleSubmit}>
+      {error && (
+        <div className="pf-error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          {error}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        {error && <div className="form-error">{error}</div>}
-
-        <div className="form-group">
-          <label htmlFor="name">
-            Project Name <span className="required">*</span>
+      <div className="pf-section">
+        <h3 className="pf-section-title">Basic Information</h3>
+        
+        <div className="pf-field">
+          <label htmlFor="name" className="pf-label">
+            Project Name <span className="pf-required">*</span>
           </label>
           <input
             id="name"
             type="text"
+            className="pf-input"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
             required
@@ -77,92 +76,118 @@ function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="description">Description</label>
+        <div className="pf-field">
+          <label htmlFor="description" className="pf-label">Description</label>
           <textarea
             id="description"
+            className="pf-textarea"
             value={formData.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="Brief description of the project"
           />
         </div>
+      </div>
 
-        <div className="form-group">
-          <label htmlFor="ui_url">
-            UI URL <span className="required">*</span>
+      <div className="pf-section">
+        <h3 className="pf-section-title">URLs & Endpoints</h3>
+        
+        <div className="pf-field">
+          <label htmlFor="ui_url" className="pf-label">
+            UI URL <span className="pf-required">*</span>
           </label>
           <input
             id="ui_url"
             type="url"
+            className="pf-input"
             value={formData.ui_url}
             onChange={(e) => handleChange('ui_url', e.target.value)}
             required
             placeholder="http://localhost:5173"
           />
+          <span className="pf-hint">The URL where your frontend application is running</span>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="api_base_url">API Base URL</label>
-          <input
-            id="api_base_url"
-            type="url"
-            value={formData.api_base_url || ''}
-            onChange={(e) => handleChange('api_base_url', e.target.value)}
-            placeholder="http://localhost:8000"
-          />
-        </div>
+        <div className="pf-row">
+          <div className="pf-field">
+            <label htmlFor="api_base_url" className="pf-label">API Base URL</label>
+            <input
+              id="api_base_url"
+              type="url"
+              className="pf-input"
+              value={formData.api_base_url || ''}
+              onChange={(e) => handleChange('api_base_url', e.target.value)}
+              placeholder="http://localhost:8000"
+            />
+          </div>
 
-        <div className="form-group">
-          <label htmlFor="openapi_url">OpenAPI URL</label>
-          <input
-            id="openapi_url"
-            type="url"
-            value={formData.openapi_url || ''}
-            onChange={(e) => handleChange('openapi_url', e.target.value)}
-            placeholder="https://api.example.com/openapi.json"
-          />
+          <div className="pf-field">
+            <label htmlFor="openapi_url" className="pf-label">OpenAPI URL</label>
+            <input
+              id="openapi_url"
+              type="url"
+              className="pf-input"
+              value={formData.openapi_url || ''}
+              onChange={(e) => handleChange('openapi_url', e.target.value)}
+              placeholder="https://api.example.com/openapi.json"
+            />
+          </div>
         </div>
+      </div>
 
-        <div className="form-group">
-          <label htmlFor="database_url">Database URL</label>
+      <div className="pf-section">
+        <h3 className="pf-section-title">Database & Backend</h3>
+        
+        <div className="pf-field">
+          <label htmlFor="database_url" className="pf-label">Database URL</label>
           <input
             id="database_url"
             type="text"
+            className="pf-input pf-input-mono"
             value={formData.database_url || ''}
             onChange={(e) => handleChange('database_url', e.target.value)}
             placeholder="postgresql://user:pass@host:port/db"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="backend_path">Backend Path</label>
+        <div className="pf-field">
+          <label htmlFor="backend_path" className="pf-label">Backend Path</label>
           <input
             id="backend_path"
             type="text"
+            className="pf-input pf-input-mono"
             value={formData.backend_path || ''}
             onChange={(e) => handleChange('backend_path', e.target.value)}
             placeholder="/path/to/backend"
           />
         </div>
+      </div>
 
-        <div className="form-group">
-          <label>Personas</label>
-          <small className="form-hint" style={{ display: 'block', marginBottom: '0.5rem' }}>
-            Personas can be managed in the Project Detail page after creation. Each persona includes gateway instructions for authentication.
-          </small>
-        </div>
+      <div className="pf-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Personas can be configured after creating the project</span>
+      </div>
 
-        <div className="form-actions">
-          <button type="button" onClick={onClose} disabled={loading}>
-            Cancel
-          </button>
-          <button type="submit" disabled={loading} className="primary">
-            {loading ? 'Saving...' : project ? 'Update' : 'Create'}
-          </button>
-        </div>
-      </form>
-    </div>
+      <div className="pf-actions">
+        <button type="button" onClick={onClose} disabled={loading} className="pf-btn pf-btn-secondary">
+          Cancel
+        </button>
+        <button type="submit" disabled={loading} className="pf-btn pf-btn-primary">
+          {loading ? (
+            <>
+              <div className="pf-spinner"></div>
+              Saving...
+            </>
+          ) : (
+            project ? 'Update Project' : 'Create Project'
+          )}
+        </button>
+      </div>
+    </form>
   )
 }
 

@@ -178,6 +178,14 @@ class BrowserUseAgent:
         purpose = test_case.get("purpose", "")
         target_url = self.mission.get("target_url", "http://localhost:5173")
         
+        # Detect and correct API URLs - we need UI URLs for browser testing
+        if target_url and ("/api/" in target_url or "/graphql" in target_url):
+            # Extract base URL from API endpoint
+            from urllib.parse import urlparse
+            parsed = urlparse(target_url)
+            target_url = f"{parsed.scheme}://{parsed.netloc}/"
+            console.print(f"[yellow]⚠️ Target URL was an API endpoint, using base URL: {target_url}[/yellow]")
+        
         console.print(f"[bold cyan]🤖 Executing: {purpose}[/bold cyan]")
 
         # Build the task prompt
@@ -284,6 +292,12 @@ class BrowserUseAgent:
         console.print(f"[green]✅ Found {len(test_cases)} test case(s)[/green]\n")
         
         target_url = self.mission.get("target_url", "http://localhost:5173")
+        # Detect and correct API URLs - we need UI URLs for browser testing
+        if target_url and ("/api/" in target_url or "/graphql" in target_url):
+            from urllib.parse import urlparse
+            parsed = urlparse(target_url)
+            target_url = f"{parsed.scheme}://{parsed.netloc}/"
+            console.print(f"[yellow]⚠️ Target URL was an API endpoint, using base URL: {target_url}[/yellow]")
         console.print(f"[dim]🌐 Target URL: {target_url}[/dim]\n")
         
         # Execute each test case

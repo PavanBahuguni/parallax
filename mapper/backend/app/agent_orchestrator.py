@@ -144,21 +144,21 @@ class AgentOrchestrator:
         Returns:
             True if mapper should run, False if can skip
         """
-        await self._send_update("analyze", "running", "🔍 Analyzing PR changes to determine if semantic mapping is needed...")
+        await self._send_update("analyze", "running", "Analyzing PR changes...")
         logger.info(f"Analyzing PR for task {task_id}, PR link: {pr_link}")
         
         semantic_graph_path = self.mapper_dir / "semantic_graph.json"
         
         # If no semantic graph exists, must run mapper
         if not semantic_graph_path.exists():
-            await self._send_update("analyze", "completed", "✅ Analysis complete - No existing graph found")
-            await self._send_update("map", "running", "🗺️ Starting semantic mapper (no existing graph found)")
+            await self._send_update("analyze", "completed", "No existing graph found")
+            await self._send_update("map", "running", "Building semantic graph...")
             return True
         
         # If no PR link, run mapper to be safe
         if not pr_link:
-            await self._send_update("analyze", "completed", "✅ Analysis complete - No PR link provided")
-            await self._send_update("map", "running", "🗺️ Starting semantic mapper (no PR link provided)")
+            await self._send_update("analyze", "completed", "No PR link provided")
+            await self._send_update("map", "running", "Building semantic graph...")
             return True
         
         # Check PR changes to see if UI/API changed
@@ -220,20 +220,16 @@ class AgentOrchestrator:
                     
                     if needs_remap:
                         reasons_str = ", ".join(set(remap_reasons))
-                        await self._send_update("analyze", "completed", 
-                            f"✅ Analysis complete - UI structural changes detected: {reasons_str}")
-                        await self._send_update("map", "running", 
-                            f"🗺️ Starting semantic mapper - UI structural changes detected: {reasons_str}")
+                        await self._send_update("analyze", "completed", f"UI changes detected: {reasons_str}")
+                        await self._send_update("map", "running", "Rebuilding semantic graph...")
                         return True
                 
                 # Analyze PR diff for simple changes (without LLM)
                 pr_summary = self._analyze_pr_diff_simple(pr_data)
             else:
                 # If we can't fetch PR diff, skip mapper (assume no structural changes)
-                await self._send_update("analyze", "completed", 
-                    "✅ Analysis complete - Could not fetch PR diff, assuming no structural changes")
-                await self._send_update("map", "skipped", 
-                    "⏭️ Skipped semantic mapper - Could not fetch PR diff, assuming no structural changes")
+                await self._send_update("analyze", "completed", "Could not fetch PR diff")
+                await self._send_update("map", "skipped", "No structural changes detected")
                 return False
             
             # Check if UI files changed (less specific)
@@ -255,19 +251,15 @@ class AgentOrchestrator:
             
             # If we have UI changes but they're all field-level, skip mapping
             if ui_changes and all_field_changes:
-                await self._send_update("analyze", "completed", 
-                    f"✅ Analysis complete - Only field/data changes detected ({len(ui_changes)} changes: {', '.join(ui_changes[:3])})")
-                await self._send_update("map", "skipped", 
-                    f"⏭️ Skipped semantic mapper - Only field/data changes detected ({len(ui_changes)} changes: {', '.join(ui_changes[:3])}), no layout/routing updates needed")
+                await self._send_update("analyze", "completed", f"Field-level changes only ({len(ui_changes)} files)")
+                await self._send_update("map", "skipped", "No structural changes")
                 return False
             
             # If we have structural UI changes, remap
             if ui_changes and not all_field_changes:
                 structural_list = [c for c in ui_changes if any(struct_kw in c.lower() for struct_kw in structural_ui_keywords) and not any(field_kw in c.lower() for field_kw in field_keywords)]
-                await self._send_update("analyze", "completed", 
-                    f"✅ Analysis complete - Structural UI changes detected ({len(structural_list)} changes: {', '.join(structural_list[:2])})")
-                await self._send_update("map", "running", 
-                    f"🗺️ Starting semantic mapper - Structural UI changes detected ({len(structural_list)} changes: {', '.join(structural_list[:2])})")
+                await self._send_update("analyze", "completed", f"Structural UI changes ({len(structural_list)} files)")
+                await self._send_update("map", "running", "Rebuilding semantic graph...")
                 return True
             
             # If frontend files changed but no UI changes detected, check file status
@@ -282,10 +274,8 @@ class AgentOrchestrator:
             if frontend_changed:
                 # If we can't determine file status, be conservative and skip
                 # (Better to skip than waste time remapping when not needed)
-                await self._send_update("analyze", "completed", 
-                    "✅ Analysis complete - Frontend files changed but no structural changes detected")
-                await self._send_update("map", "skipped", 
-                    "⏭️ Skipped semantic mapper - Frontend files changed but no structural changes (routes/links/pages) detected")
+                await self._send_update("analyze", "completed", "Frontend modified, no structural changes")
+                await self._send_update("map", "skipped", "Using existing graph")
                 return False
             
             # Check if API routes changed - only remap if NEW endpoints added, not modifications to existing ones
@@ -312,47 +302,35 @@ class AgentOrchestrator:
                             break
                 
                 if new_endpoints:
-                    await self._send_update("analyze", "completed",
-                        f"✅ Analysis complete - New API endpoints detected ({len(api_changes)} changes)")
-                    await self._send_update("map", "running",
-                        f"🗺️ Starting semantic mapper - New API endpoints detected ({len(api_changes)} changes)")
+                    await self._send_update("analyze", "completed", f"New API endpoints ({len(api_changes)} files)")
+                    await self._send_update("map", "running", "Rebuilding semantic graph...")
                     return True
                 else:
                     # Only modifications to existing endpoints, skip mapping
-                    await self._send_update("analyze", "completed",
-                        f"✅ Analysis complete - API endpoints modified but no new endpoints added")
-                    await self._send_update("map", "skipped",
-                        f"⏭️ Skipped semantic mapper - API endpoints modified but no new endpoints added ({len(api_changes)} changes)")
+                    await self._send_update("analyze", "completed", "API modified, no new endpoints")
+                    await self._send_update("map", "skipped", "Using existing graph")
                     # Don't return False here - continue to check other conditions
             elif api_changes:
                 # Can't analyze PR, be conservative but log the reason
-                await self._send_update("analyze", "completed",
-                    f"✅ Analysis complete - API changes detected but couldn't verify if new endpoints")
-                await self._send_update("map", "running",
-                    f"🗺️ Starting semantic mapper - API changes detected but couldn't verify if new endpoints ({len(api_changes)} changes)")
+                await self._send_update("analyze", "completed", f"API changes detected ({len(api_changes)} files)")
+                await self._send_update("map", "running", "Rebuilding semantic graph...")
                 return True
             
             # Check graph age - if older than 7 days, remap
             graph_age = (datetime.now() - datetime.fromtimestamp(semantic_graph_path.stat().st_mtime)).days
             if graph_age > 7:
-                await self._send_update("analyze", "completed", 
-                    f"✅ Analysis complete - Semantic graph is {graph_age} days old, remapping recommended")
-                await self._send_update("map", "running", 
-                    f"🗺️ Starting semantic mapper - Semantic graph is {graph_age} days old, remapping recommended")
+                await self._send_update("analyze", "completed", f"Graph is {graph_age} days old")
+                await self._send_update("map", "running", "Refreshing semantic graph...")
                 return True
             
-            await self._send_update("analyze", "completed", 
-                "✅ Analysis complete - No UI/API structural changes detected")
-            await self._send_update("map", "skipped", 
-                "⏭️ Skipped semantic mapper - No UI/API structural changes detected")
+            await self._send_update("analyze", "completed", "No structural changes detected")
+            await self._send_update("map", "skipped", "Using existing graph")
             return False
             
         except Exception as e:
             logger.warning(f"Error analyzing PR for mapper decision: {e}")
-            await self._send_update("analyze", "completed", 
-                f"⚠️ Analysis complete - Error occurred ({str(e)[:50]}), running mapper to be safe")
-            await self._send_update("map", "running", 
-                f"🗺️ Starting semantic mapper - Error analyzing PR ({str(e)[:50]}), running to be safe")
+            await self._send_update("analyze", "completed", f"Analysis error: {str(e)[:50]}")
+            await self._send_update("map", "running", "Building semantic graph (fallback)...")
             return True
     
     async def run_semantic_mapper(self, task_id: str) -> Dict[str, Any]:
@@ -382,7 +360,7 @@ class AgentOrchestrator:
                     if persona_names:
                         env["PROJECT_PERSONAS"] = ",".join(persona_names)
                         # Also store full persona objects as JSON for gateway instructions access
-                        import json
+                        # Note: 'json' module is imported at module level
                         env["PROJECT_PERSONAS_FULL"] = json.dumps(personas)
             
             process = await asyncio.create_subprocess_exec(
@@ -404,7 +382,7 @@ class AgentOrchestrator:
                     node_count = len(graph_data.get("nodes", []))
                     edge_count = len(graph_data.get("edges", []))
                     await self._send_update("map", "completed", 
-                        f"Semantic mapping completed: {node_count} nodes, {edge_count} edges")
+                        f"Graph built: {node_count} nodes, {edge_count} edges")
                     return {
                         "success": process.returncode == 0,
                         "output": output,
@@ -415,9 +393,9 @@ class AgentOrchestrator:
                     logger.warning(f"Could not parse semantic graph: {e}")
             
             if process.returncode == 0:
-                await self._send_update("map", "completed", "Semantic mapping completed")
+                await self._send_update("map", "completed", "Graph ready")
             else:
-                await self._send_update("map", "failed", f"Semantic mapping failed: {output[:200]}")
+                await self._send_update("map", "failed", f"Mapping failed: {output[:100]}")
             
             return {
                 "success": process.returncode == 0,
@@ -426,7 +404,7 @@ class AgentOrchestrator:
             
         except Exception as e:
             error_msg = str(e)
-            await self._send_update("map", "failed", f"Semantic mapping error: {error_msg}")
+            await self._send_update("map", "failed", f"Mapping error: {error_msg[:100]}")
             return {
                 "success": False,
                 "error": error_msg
@@ -434,8 +412,16 @@ class AgentOrchestrator:
     
     async def run_context_processor(self, task_id: str, task_file_path: Path) -> Dict[str, Any]:
         """Run context processor to generate mission.json."""
-        await self._send_update("generate-mission", "running", 
-            f"📝 Starting mission generation for {task_id}...")
+        await self._send_update("generate-mission", "running", "Generating test plan...")
+        
+        # Clean up previous mission file to ensure we don't return stale results
+        mission_file = self.mapper_dir / "temp" / f"{task_id}_mission.json"
+        if mission_file.exists():
+            try:
+                mission_file.unlink()
+                logger.info(f"Deleted stale mission file: {mission_file}")
+            except Exception as e:
+                logger.warning(f"Failed to delete stale mission file: {e}")
         
         try:
             script_path = self.mapper_dir / "context_processor.py"
@@ -460,6 +446,14 @@ class AgentOrchestrator:
             stdout, _ = await process.communicate()
             output = stdout.decode() if stdout else ""
             
+            # Log the context_processor output for debugging
+            if output:
+                logger.info("=== Context Processor Output ===")
+                for line in output.split('\n'):
+                    if line.strip():
+                        logger.info(f"[context_processor] {line}")
+                logger.info("=== End Context Processor Output ===")
+            
             # Check if mission.json was created
             mission_file = self.mapper_dir / "temp" / f"{task_id}_mission.json"
             if mission_file.exists():
@@ -467,8 +461,28 @@ class AgentOrchestrator:
                     mission_data = json.loads(mission_file.read_text())
                     action_count = len(mission_data.get("actions", []))
                     verification = mission_data.get("verification_points", {})
+                    
+                    # Send detailed info about what was generated
+                    personas = mission_data.get("personas", [])
+                    test_cases = mission_data.get("test_cases", [])
+                    
+                    details_msg = []
+                    if personas:
+                        details_msg.append(f"👤 Personas: {', '.join(personas)}")
+                    
+                    if test_cases:
+                        details_msg.append(f"📋 Test Cases ({len(test_cases)}):")
+                        for i, tc in enumerate(test_cases[:5]):
+                            purpose = tc.get("purpose", "Unknown test case")
+                            details_msg.append(f"  {i+1}. {purpose}")
+                        if len(test_cases) > 5:
+                            details_msg.append(f"  ... and {len(test_cases) - 5} more")
+                    
+                    if details_msg:
+                        await self._send_update("generate-mission", "running", "\n".join(details_msg))
+
                     await self._send_update("generate-mission", "completed",
-                        f"✅ Mission generation completed for {task_id}: {action_count} action(s) defined")
+                        f"Test plan ready ({action_count} actions)")
                     return {
                         "success": True,
                         "output": output,
@@ -478,26 +492,53 @@ class AgentOrchestrator:
                 except Exception as e:
                     logger.warning(f"Could not parse mission JSON: {e}")
             
+            # If we reached here, either file doesn't exist or parsing failed
             if process.returncode == 0:
-                await self._send_update("generate-mission", "completed", f"✅ Mission generation completed for {task_id}")
+                # Script exited successfully but no output file - likely missing configuration or early return
+                error_msg = "Generation completed but no mission file was created. Check logs for missing API keys or configuration."
+                if "Missing NUTANIX_API_URL" in output:
+                    error_msg = "Missing NUTANIX_API_URL or NUTANIX_API_KEY environment variables."
+                
+                await self._send_update("generate-mission", "failed", error_msg)
+                return {
+                    "success": False, 
+                    "error": error_msg,
+                    "output": output
+                }
             else:
-                await self._send_update("generate-mission", "failed", 
-                    f"❌ Mission generation failed: {output[:200]}")
+                await self._send_update("generate-mission", "failed", f"Generation failed: {output[:100]}")
             
             return {
-                "success": process.returncode == 0,
+                "success": False,
                 "output": output,
-                "mission_file": str(mission_file.relative_to(self.mapper_dir)) if mission_file.exists() else None
+                "mission_file": None
             }
             
         except Exception as e:
             error_msg = str(e)
-            await self._send_update("generate-mission", "failed", f"Mission generation error: {error_msg}")
+            await self._send_update("generate-mission", "failed", f"Generation error: {error_msg[:100]}")
             return {
                 "success": False,
                 "error": error_msg
             }
     
+    def _clean_log_line(self, line: str) -> str:
+        """Clean log line by removing timestamps, log levels, and ANSI codes."""
+        # Remove ANSI escape codes
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        line = ansi_escape.sub('', line)
+        
+        # Remove timestamps and log levels (e.g., "10:16:43 | INFO     | [executor] ")
+        # Matches pattern: HH:MM:SS | LEVEL | [source]
+        log_prefix = re.compile(r'^\d{2}:\d{2}:\d{2}\s+\|\s+[A-Z]+\s+\|\s+\[[^\]]+\]\s+')
+        line = log_prefix.sub('', line)
+        
+        # Also handle simpler format: HH:MM:SS |
+        simple_prefix = re.compile(r'^\d{2}:\d{2}:\d{2}\s+\|\s+')
+        line = simple_prefix.sub('', line)
+        
+        return line.strip()
+
     async def run_executor(self, task_id: str, mission_file_path: Path) -> Dict[str, Any]:
         """Run executor to execute tests."""
         # Load mission to extract test cases
@@ -517,12 +558,9 @@ class AgentOrchestrator:
                         test_cases.append(f"📋 {purpose}")
                     
                 if test_cases:
-                    # Just show the test count, not all details to reduce clutter
-                    await self._send_update("execute", "running",
-                        f"▶️ Starting test execution for {task_id} ({len(test_cases)} test cases)")
+                    await self._send_update("execute", "running", f"Running {len(test_cases)} test cases...")
                 else:
-                    await self._send_update("execute", "running",
-                        f"▶️ Starting test execution for {task_id} with triple-check verification...")
+                    await self._send_update("execute", "running", "Running tests...")
             else:
                 # Fallback: Generate test cases from actions and verification_points (legacy approach)
                 verification = mission_data.get("verification_points", {})
@@ -632,16 +670,12 @@ class AgentOrchestrator:
                         test_cases.append(f"DB: Verify {columns_str} column(s) can store values correctly")
                 
                 if test_cases:
-                    test_cases_str = "\n  • " + "\n  • ".join(test_cases)
-                    await self._send_update("execute", "running", 
-                        f"▶️ Starting test execution for {task_id}\n\nTest cases to run:{test_cases_str}")
+                    await self._send_update("execute", "running", f"Running {len(test_cases)} test cases...")
                 else:
-                    await self._send_update("execute", "running", 
-                        f"▶️ Starting test execution for {task_id} with triple-check verification...")
+                    await self._send_update("execute", "running", "Running tests...")
         except Exception as e:
             logger.warning(f"Could not extract test cases: {e}")
-            await self._send_update("execute", "running", 
-                f"▶️ Starting test execution for {task_id} with triple-check verification...")
+            await self._send_update("execute", "running", "Running tests...")
         
         try:
             script_path = self.mapper_dir / "executor.py"
@@ -680,23 +714,33 @@ class AgentOrchestrator:
                     break
                 
                 decoded_line = line.decode().rstrip()
+                
+                # Clean log line for UI display
+                clean_line = self._clean_log_line(decoded_line)
+                
+                # Keep original line for output_lines to preserve full logs for files
                 output_lines.append(decoded_line)
                 logger.info(f"[executor] {decoded_line}")
                 
                 # Send periodic updates to UI (every 5 seconds or on very important lines only)
                 current_time = asyncio.get_event_loop().time()
-                is_important = any(marker in decoded_line for marker in [
+                # Check important markers in the CLEANED line to avoid missing them due to formatting
+                is_important = any(marker in clean_line for marker in [
                     '❌', 'Test completed', 'OVERALL', 'TRIPLE-CHECK',
                     'Database Verification', 'API Verification', 'UI Verification',
                     'EXECUTION SUMMARY', 'FAILED', 'PASSED'
                 ])
 
                 if is_important or (current_time - last_update_time > 5.0):
-                    # Send last few lines as progress update (avoid sending the same content repeatedly)
-                    recent_lines = output_lines[-3:]
-                    progress_msg = "\n".join(recent_lines)
-                    # Only send if it's different from the last sent message
-                    if progress_msg != getattr(self, '_last_progress_msg', None):
+                    # Send cleaned line as progress update
+                    # For periodic updates, we might want to send the last few cleaned lines
+                    # But the UI expects a single message string usually.
+                    # Let's send just this line if important, or a batch if periodic.
+                    
+                    progress_msg = clean_line
+                    
+                    # Only send if it's different from the last sent message and not empty
+                    if progress_msg and progress_msg != getattr(self, '_last_progress_msg', None):
                         await self._send_update("execute", "running", progress_msg)
                         self._last_progress_msg = progress_msg
                     last_update_time = current_time
@@ -706,6 +750,7 @@ class AgentOrchestrator:
             
             # Check for report file
             report_file = self.mapper_dir / "temp" / f"{mission_file_path.stem}_report.json"
+            logger.info(f"Looking for report file at: {report_file}")
             
             result = {
                 "success": process.returncode == 0,
@@ -713,42 +758,13 @@ class AgentOrchestrator:
                 "report_file": str(report_file.relative_to(self.mapper_dir)) if report_file.exists() else None
             }
             
-            # If executor failed, extract and show the actual error
-            if process.returncode != 0:
-                # Try to extract the actual error from output
-                error_lines = output.split('\n') if output else []
-                error_msg = output
-                
-                # Look for error patterns in the output
-                error_start_idx = None
-                for i, line in enumerate(error_lines):
-                    # Look for common error indicators
-                    if any(keyword in line for keyword in ['Traceback', 'Error:', 'Exception:', '❌', 'FAIL', 'failed']):
-                        error_start_idx = i
-                        break
-                
-                if error_start_idx is not None:
-                    # Extract error from that point onwards
-                    error_section = '\n'.join(error_lines[error_start_idx:])
-                    # Also include last 20 lines before error for context
-                    context_start = max(0, error_start_idx - 20)
-                    error_msg = '\n'.join(error_lines[context_start:])
-                else:
-                    # Fallback: show last 1000 chars (more likely to contain the error)
-                    error_msg = output[-1000:] if len(output) > 1000 else output
-                
-                # Limit error message but show key parts
-                if len(error_msg) > 2000:
-                    error_msg = error_msg[:1000] + "\n... (truncated) ...\n" + error_msg[-1000:]
-                
-                await self._send_update("execute", "failed",
-                    f"❌ Test execution failed:\n{error_msg}")
-                result["error"] = output
-                return result
-            
+            # Try to read report file even if process failed
             if report_file.exists():
+                logger.info(f"Report file found, size: {report_file.stat().st_size} bytes")
                 try:
                     report_data = json.loads(report_file.read_text())
+                    result["report"] = report_data
+                    
                     triple_check = report_data.get("triple_check", {})
                     db_success = triple_check.get("database", {}).get("success", False)
                     api_success = triple_check.get("api", {}).get("success", False)
@@ -843,24 +859,11 @@ class AgentOrchestrator:
                                     scenario_summary_lines.append(f"    {db_status} DB: {db_desc}")
                     
                     # Build final message
-                    if scenario_summary_lines:
-                        summary_text = "\n".join(scenario_summary_lines)
-                        if overall_success:
-                            await self._send_update("execute", "completed",
-                                f"✅ All tests passed! ({passed}/3 checks passed)\n\nTest Results:\n{summary_text}")
-                        else:
-                            await self._send_update("execute", "failed",
-                                f"❌ Tests failed: {failed} check(s) failed, {passed} passed\n\nTest Results:\n{summary_text}")
+                    if overall_success:
+                        await self._send_update("execute", "completed", f"All tests passed ({passed}/3 checks)")
                     else:
-                        # Fallback to simple message if no scenario results
-                        if overall_success:
-                            await self._send_update("execute", "completed",
-                                f"✅ All tests passed! ({passed}/3 checks passed)")
-                        else:
-                            await self._send_update("execute", "failed",
-                                f"❌ Tests failed: {failed} check(s) failed, {passed} passed")
+                        await self._send_update("execute", "failed", f"{failed} check(s) failed, {passed} passed")
                     
-                    result["report"] = report_data
                     result["triple_check"] = {
                         "database": db_success,
                         "api": api_success,
@@ -870,35 +873,56 @@ class AgentOrchestrator:
                     result["scenario_results"] = scenario_results
                 except Exception as e:
                     logger.warning(f"Could not parse report JSON: {e}")
+
+            # If executor failed, extract and show the actual error
+            if process.returncode != 0:
+                # Try to extract the actual error from output
+                error_lines = output.split('\n') if output else []
+                error_msg = output
+                
+                # Look for error patterns in the output
+                error_start_idx = None
+                for i, line in enumerate(error_lines):
+                    # Look for common error indicators
+                    if any(keyword in line for keyword in ['Traceback', 'Error:', 'Exception:', '❌', 'FAIL', 'failed']):
+                        error_start_idx = i
+                        break
+                
+                if error_start_idx is not None:
+                    # Extract error from that point onwards
+                    error_section = '\n'.join(error_lines[error_start_idx:])
+                    # Also include last 20 lines before error for context
+                    context_start = max(0, error_start_idx - 20)
+                    error_msg = '\n'.join(error_lines[context_start:])
+                else:
+                    # Fallback: show last 1000 chars (more likely to contain the error)
+                    error_msg = output[-1000:] if len(output) > 1000 else output
+                
+                # Limit error message but show key parts
+                if len(error_msg) > 2000:
+                    error_msg = error_msg[:1000] + "\n... (truncated) ...\n" + error_msg[-1000:]
+                
+                # If we have a report, we don't need to show the raw error as prominently
+                if "report" not in result:
+                    await self._send_update("execute", "failed", f"Execution failed: {error_msg[:200]}")
+                
+                result["error"] = output
+                return result
             
             if process.returncode == 0:
                 if not result.get("triple_check", {}).get("overall", False):
-                    await self._send_update("execute", "failed", "Tests completed but some checks failed")
+                    await self._send_update("execute", "failed", "Some checks failed")
             else:
-                # Show more detailed error output
-                error_lines = output.split('\n') if output else []
-                # Find the actual error (usually after the warning)
-                error_msg = output
-                for i, line in enumerate(error_lines):
-                    if 'Traceback' in line or 'Error' in line or 'Exception' in line:
-                        # Show from this line onwards
-                        error_msg = '\n'.join(error_lines[i:])
-                        break
-                
-                # Limit error message length but show key parts
-                if len(error_msg) > 1000:
-                    error_msg = error_msg[:500] + "\n... (truncated) ...\n" + error_msg[-500:]
-                
-                await self._send_update("execute", "failed", f"Test execution failed:\n{error_msg}")
+                await self._send_update("execute", "failed", "Execution error")
             
             return result
             
         except Exception as e:
-            error_msg = str(e)
-            await self._send_update("execute", "failed", f"Test execution error: {error_msg}")
+            error_msg = str(e)[:100]
+            await self._send_update("execute", "failed", f"Error: {error_msg}")
             return {
                 "success": False,
-                "error": error_msg
+                "error": str(e)
             }
     
     async def run_full_workflow(self, task_id: str, task_file_path: Path, 
@@ -908,7 +932,7 @@ class AgentOrchestrator:
         Returns:
             Dict with results from each step and overall status
         """
-        await self._send_update("workflow", "running", f"🚀 Starting automated workflow for {task_id}...")
+        await self._send_update("workflow", "running", f"Starting workflow for {task_id}")
         
         results = {
             "task_id": task_id,
@@ -926,13 +950,11 @@ class AgentOrchestrator:
                 results["steps"]["map"] = map_result
                 
                 if not map_result.get("success"):
-                    await self._send_update("workflow", "failed", 
-                        "Workflow stopped: Semantic mapping failed")
+                    await self._send_update("workflow", "failed", "Mapping failed")
                     results["overall_success"] = False
                     return results
             else:
-                await self._send_update("map", "skipped", 
-                    "Skipping semantic mapping (no UI/API changes detected)")
+                await self._send_update("map", "skipped", "Using existing graph")
                 results["steps"]["map"] = {"success": True, "skipped": True}
             
             # Step 3: Generate mission
@@ -940,14 +962,14 @@ class AgentOrchestrator:
             results["steps"]["generate-mission"] = mission_result
             
             if not mission_result.get("success"):
-                await self._send_update("workflow", "failed", 
-                    "Workflow stopped: Mission generation failed")
+                await self._send_update("workflow", "failed", "Mission generation failed")
                 results["overall_success"] = False
                 return results
             
             # Step 4: Execute tests
-            mission_file = self.mapper_dir / mission_result.get("mission_file", 
-                f"temp/{task_id}_mission.json")
+            # Handle None value explicitly (get() default only works if key is missing, not if value is None)
+            mission_file_path = mission_result.get("mission_file") or f"temp/{task_id}_mission.json"
+            mission_file = self.mapper_dir / mission_file_path
             
             if mission_file.exists():
                 execute_result = await self.run_executor(task_id, mission_file)
@@ -955,8 +977,7 @@ class AgentOrchestrator:
                 results["overall_success"] = execute_result.get("success", False) and \
                     execute_result.get("triple_check", {}).get("overall", False)
             else:
-                await self._send_update("execute", "failed", 
-                    f"Mission file not found: {mission_file}")
+                await self._send_update("execute", "failed", "Mission file not found")
                 results["steps"]["execute"] = {
                     "success": False,
                     "error": "Mission file not found"
@@ -965,18 +986,16 @@ class AgentOrchestrator:
             
             # Final status
             if results["overall_success"]:
-                await self._send_update("workflow", "completed", 
-                    "✅ Workflow completed successfully! All tests passed.")
+                await self._send_update("workflow", "completed", "All tests passed")
             else:
-                await self._send_update("workflow", "failed", 
-                    "❌ Workflow completed but some tests failed. Check details above.")
+                await self._send_update("workflow", "failed", "Some tests failed")
             
             return results
             
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Workflow error: {e}", exc_info=True)
-            await self._send_update("workflow", "failed", f"Workflow error: {error_msg}")
+            await self._send_update("workflow", "failed", f"Error: {error_msg[:100]}")
             results["overall_success"] = False
             results["error"] = error_msg
             return results

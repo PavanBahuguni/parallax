@@ -1,0 +1,68 @@
+.log-viewer {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-y: auto;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 6px;
+}
+
+.log-viewer.terminal {
+  padding: 12px;
+}
+
+.log-viewer.full {
+  padding: 0;
+}
+
+.log-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 1.5em;
+}
+
+.log-line.empty {
+  color: #64748b;
+  font-style: italic;
+  padding: 4px 12px;
+}
+
+.log-group {
+  border-bottom: 1px solid #334155;
+}
+
+.log-group:last-child {
+  border-bottom: none;
+}
+
+.log-group-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #334155;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.log-group-header:hover {
+  background: #475569;
+}
+
+.log-group-icon {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.log-group-title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.log-group-body {
+  padding: 8px 12px 8px 30px;
+  background: #1e293b;
+}

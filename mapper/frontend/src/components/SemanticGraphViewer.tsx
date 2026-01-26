@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from 'react'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -375,9 +375,23 @@ function SemanticGraphViewerInner({ graph }: SemanticGraphViewerProps) {
       if (!validNodeIds.has(fromId) || !validNodeIds.has(toId)) return
 
       let label = ''
-      if (edge.link_text) label = edge.link_text
-      else if (edge.description) label = edge.description
-      else if (edge.href) {
+      // Priority 1: Use selector if available (especially ID-based selectors for stability)
+      // This ensures we show stable selectors like "a#legend-link-renewals" instead of dynamic text
+      if (edge.selector) {
+        // For ID-based selectors (e.g., "a#legend-link-renewals"), show just the ID part for cleaner display
+        // For other selectors, show the full selector
+        if (edge.selector.startsWith('a#')) {
+          label = edge.selector.substring(2) // Remove "a#" prefix, show just "legend-link-renewals"
+        } else if (edge.selector.startsWith('#')) {
+          label = edge.selector.substring(1) // Remove "#" prefix
+        } else {
+          label = edge.selector
+        }
+      } else if (edge.link_text) {
+        label = edge.link_text
+      } else if (edge.description) {
+        label = edge.description
+      } else if (edge.href) {
         const path = edge.href.split('/').pop() || edge.href
         label = path.length > 20 ? path.substring(0, 20) + '...' : path
       } else if (edge.action) {
@@ -421,6 +435,108 @@ function SemanticGraphViewerInner({ graph }: SemanticGraphViewerProps) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialLayout.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialLayout.edges)
+  
+  // Store base positions (snapshot when layout is applied or drag ends)
+  const basePositionsRef = useRef<Record<string, { x: number; y: number }>>({})
+  const draggingNodeRef = useRef<string | null>(null)
+  
+  // Update base positions when layout changes
+  useEffect(() => {
+    const positions: Record<string, { x: number; y: number }> = {}
+    nodes.forEach(node => {
+      positions[node.id] = { x: node.position.x, y: node.position.y }
+    })
+    basePositionsRef.current = positions
+  }, [reactFlowNodes, reactFlowEdges]) // Update when graph data changes
+  
+  // Find all child nodes recursively (nodes connected via outgoing edges)
+  const getChildNodes = useCallback((nodeId: string, visited = new Set<string>()): string[] => {
+    if (visited.has(nodeId)) return []
+    visited.add(nodeId)
+    
+    const children: string[] = []
+    edges.forEach(edge => {
+      if (edge.source === nodeId && !visited.has(edge.target)) {
+        children.push(edge.target)
+        // Recursively get children of children
+        children.push(...getChildNodes(edge.target, visited))
+      }
+    })
+    return children
+  }, [edges])
+  
+  // Custom nodes change handler to track drag start/end
+  const handleNodesChange = useCallback((changes: any[]) => {
+    // Check if any change is a position change (drag)
+    const positionChanges = changes.filter(c => c.type === 'position' && c.dragging !== undefined)
+    
+    if (positionChanges.length > 0) {
+      const dragChange = positionChanges[0]
+      
+      // Drag started
+      if (dragChange.dragging === true && draggingNodeRef.current === null) {
+        draggingNodeRef.current = dragChange.id
+        // Snapshot current positions as base
+        const positions: Record<string, { x: number; y: number }> = {}
+        nodes.forEach(node => {
+          positions[node.id] = { x: node.position.x, y: node.position.y }
+        })
+        basePositionsRef.current = positions
+      }
+      
+      // Drag ended
+      if (dragChange.dragging === false) {
+        draggingNodeRef.current = null
+        // Update base positions to new positions
+        setNodes((nds) => {
+          const newPositions: Record<string, { x: number; y: number }> = {}
+          nds.forEach(node => {
+            newPositions[node.id] = { x: node.position.x, y: node.position.y }
+          })
+          basePositionsRef.current = newPositions
+          return nds
+        })
+      }
+    }
+    
+    // Call original handler
+    onNodesChange(changes)
+  }, [nodes, onNodesChange, setNodes])
+  
+  // Handle node drag - move child nodes along with parent
+  const onNodeDrag = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (draggingNodeRef.current !== node.id) return
+    
+    const childNodeIds = getChildNodes(node.id)
+    if (childNodeIds.length === 0) return
+    
+    // Get base position of dragged node
+    const basePos = basePositionsRef.current[node.id]
+    if (!basePos) return
+    
+    // Calculate the offset from base position
+    const offsetX = node.position.x - basePos.x
+    const offsetY = node.position.y - basePos.y
+    
+    // Update child node positions maintaining relative positions
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (childNodeIds.includes(n.id)) {
+          const childBasePos = basePositionsRef.current[n.id]
+          if (childBasePos) {
+            return {
+              ...n,
+              position: {
+                x: childBasePos.x + offsetX,
+                y: childBasePos.y + offsetY,
+              },
+            }
+          }
+        }
+        return n
+      })
+    )
+  }, [getChildNodes, setNodes])
 
   useEffect(() => {
     const result = getLayoutedElements(reactFlowNodes, reactFlowEdges)
@@ -468,8 +584,9 @@ function SemanticGraphViewerInner({ graph }: SemanticGraphViewerProps) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDrag={onNodeDrag}
         nodeTypes={nodeTypes}
         onNodeClick={onNodeClick}
         nodesDraggable={true}
