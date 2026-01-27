@@ -170,8 +170,8 @@ function TaskDetailPage() {
           
           <div className="tdp-header-content">
             <div className="tdp-title-row">
+              <span className="tdp-ticket-id">{task.ticket_id || task.id}</span>
               <h1 className="tdp-title">{task.title || 'Untitled Task'}</h1>
-              <span className="tdp-task-id">{task.id}</span>
             </div>
             
             {task.pr_link && (

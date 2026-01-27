@@ -3391,22 +3391,22 @@ def main():
         print(f"   ✅ Description: {task_data['description'][:100]}...")
         print(f"   ✅ PR Link: {task_data.get('pr_link', 'Not found')}")
         
-        # Extract task name from ticket_id or description
-        task_name = processor._extract_ticket_id(task_data.get("description", ""))
-        if task_name == "TICKET-UNKNOWN":
-            # Try to extract from task file name (e.g., TASK-1_task.md -> TASK-1)
-            task_file_stem = Path(args.task_file).stem
-            if task_file_stem.upper().startswith("TASK-"):
-                # Extract TASK-X from filename (e.g., TASK-1_task -> TASK-1, Task-3 -> TASK-3)
-                task_name = task_file_stem.split("_")[0].upper()
-            elif task_file_stem == "task":
-                task_name = "TASK-1"  # task.md -> TASK-1
-            else:
-                # Try to extract from first line of description
-                first_line = task_data.get("description", "").split("\n")[0]
-                task_name = re.sub(r'[^\w-]', '_', first_line[:50]).lower()
-            if not task_name:
-                task_name = "task"
+        # Extract task name from filename (for consistent file naming with orchestrator)
+        # The ticket_id (like #PPT-20) is stored inside the mission JSON for display purposes
+        task_file_stem = Path(args.task_file).stem
+        if task_file_stem.upper().startswith("TASK-"):
+            # Extract TASK-X from filename (e.g., TASK-1_task -> TASK-1, Task-3 -> TASK-3)
+            task_name = task_file_stem.split("_")[0].upper()
+        elif task_file_stem == "task":
+            task_name = "TASK-1"  # task.md -> TASK-1
+        else:
+            # Use filename as-is but uppercase
+            task_name = task_file_stem.upper()
+        
+        # Extract ticket_id from content (e.g., #PPT-20) for display in mission JSON
+        ticket_id = processor._extract_ticket_id(task_data.get("description", ""))
+        if ticket_id == "TICKET-UNKNOWN":
+            ticket_id = task_name  # Fallback to task_name if no ticket found
         
         # Create temp directory
         temp_dir = Path(__file__).parent / args.temp_dir

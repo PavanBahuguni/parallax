@@ -618,16 +618,24 @@ def parse_task_file(task_path: Path) -> Dict[str, Any]:
     title = "Unknown Task"
     description = ""
     pr_link = None
+    ticket_id = None  # External ticket ID like #PPT-20
     
     lines = content.split('\n')
     for i, line in enumerate(lines):
-        if line.startswith('# '):
+        # Check for ticket ID like #PPT-20 or #JIRA-123 (must be first non-empty line typically)
+        if re.match(r'^#[A-Z]+-\d+$', line.strip()):
+            ticket_id = line.strip()
+        elif line.startswith('# '):
             title = line[2:].strip()
-        elif line.startswith('## Description'):
-            # Get description until next ##
+        elif line.strip().lower() == 'title:' and i + 1 < len(lines):
+            # Handle "Title:" on its own line followed by actual title
+            title = lines[i + 1].strip()
+        elif line.startswith('## Description') or line.strip().lower() == 'description:':
+            # Get description until next section (## or PR: or Title:)
             desc_lines = []
             for j in range(i + 1, len(lines)):
-                if lines[j].startswith('##'):
+                next_line = lines[j].strip().lower()
+                if lines[j].startswith('##') or next_line == 'pr:' or next_line == 'title:':
                     break
                 desc_lines.append(lines[j])
             description = '\n'.join(desc_lines).strip()
@@ -674,6 +682,7 @@ def parse_task_file(task_path: Path) -> Dict[str, Any]:
     
     return {
         "id": task_id,
+        "ticket_id": ticket_id,  # External ticket ID like #PPT-20
         "title": title,
         "description": description or content[:200] + "..." if len(content) > 200 else content,
         "pr_link": pr_link,
