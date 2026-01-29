@@ -1,0 +1,700 @@
+{
+  "node_id": "sales_bookings",
+  "last_updated": "2026-01-29T00:17:09.430301",
+  "tests": [
+    {
+      "id": "verify_account_segment_reseller",
+      "purpose": "Verify that the Account Segment column is visible on the Sales Data \u2013 Bookings page and displays the correct value from the accountSegment field in the API response for Reseller opportunities.",
+      "persona": "Reseller",
+      "source_tasks": [
+        "TASK-4"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$66.20K",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Reseller",
+        "goal": "Log in through Nutanix SSO, select the CDW partner view and contact, and verify landing on Partner Central",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('password')"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Login')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "CDW"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('CDW')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Aaron Ferraro')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "56de4b84034cf05ab39bb113aa3d74be"
+      },
+      "verification": {
+        "ui": [
+          "Account Segment column is visible",
+          "Account Segment column displays API value"
+        ],
+        "api_field_mapping": {
+          "Account Segment": "accountSegment"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Reseller user.",
+        "Capture the API response.",
+        "Verify that the Account Segment column is visible.",
+        "Verify that the Account Segment column displays the value from accountSegment in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.922438",
+      "updated_at": "2026-01-28T23:57:39.922438"
+    },
+    {
+      "id": "verify_account_segment_distributor",
+      "purpose": "Verify that the Account Segment column is visible on the Sales Data \u2013 Bookings page and displays the correct value from the accountSegment field in the API response for Distributor opportunities.",
+      "persona": "Distributor",
+      "source_tasks": [
+        "TASK-4"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$66.20K",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Distributor",
+        "goal": "Log in via My Nutanix SSO, select the Adistec partner view and contact role",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": "input[type='password']"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "Adistec"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('Adistec')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Vendor Manager')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "90ab5922c0c3671bb6ba2850a8099c2e"
+      },
+      "verification": {
+        "ui": [
+          "Account Segment column is visible",
+          "Account Segment column displays API value"
+        ],
+        "api_field_mapping": {
+          "Account Segment": "accountSegment"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Distributor user.",
+        "Capture the API response.",
+        "Verify that the Account Segment column is visible.",
+        "Verify that the Account Segment column displays the value from accountSegment in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.922444",
+      "updated_at": "2026-01-28T23:57:39.922444"
+    },
+    {
+      "id": "verify_tcv_reseller_visibility",
+      "purpose": "Verify that Reseller users see the TCV column displaying tcvAmountUplifted and that tcvAmount is not exposed via API.",
+      "persona": "Reseller",
+      "source_tasks": [
+        "PPT-20"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$2.13M",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Reseller",
+        "goal": "Authenticate via SSO, select CDW as partner view, choose contact Aaron Ferraro, and land on Partner Central home page",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": "input[name='password']"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "CDW"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('CDW')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Aaron Ferraro')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "56de4b84034cf05ab39bb113aa3d74be"
+      },
+      "verification": {
+        "ui": [
+          "TCV column is visible",
+          "TCV column displays API value",
+          "tcvAmount is NOT in the API response"
+        ],
+        "api_field_mapping": {
+          "TCV": "tcvAmountUplifted"
+        },
+        "hidden_api_fields": [
+          "tcvAmount"
+        ],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Reseller user.",
+        "Verify that the TCV column is visible.",
+        "Capture the API response.",
+        "Verify that the TCV column displays the value from tcvAmountUplifted in the API response.",
+        "Verify that tcvAmount is NOT in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.924377",
+      "updated_at": "2026-01-28T23:57:39.924377"
+    },
+    {
+      "id": "verify_tcv_distributor_visibility",
+      "purpose": "Verify that Distributor users see the TCV column displaying tcvAmount.",
+      "persona": "Distributor",
+      "source_tasks": [
+        "PPT-20"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$2.13M",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Distributor",
+        "goal": "Log in via SSO, select partner view and contact role",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Password')"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "Adistec"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('Adistec')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Vendor Manager')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "90ab5922c0c3671bb6ba2850a8099c2e"
+      },
+      "verification": {
+        "ui": [
+          "TCV column is visible",
+          "TCV column displays API value"
+        ],
+        "api_field_mapping": {
+          "TCV": "tcvAmount"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Distributor user.",
+        "Verify that the TCV column is visible.",
+        "Capture the API response.",
+        "Verify that the TCV column displays the value from tcvAmount in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.924382",
+      "updated_at": "2026-01-28T23:57:39.924382"
+    },
+    {
+      "id": "verify_account_segment_reseller",
+      "purpose": "Verify that the Account Segment field is present in the API response and displayed correctly in the Opportunity detailed view UI for Reseller users.",
+      "persona": "Reseller",
+      "source_tasks": [
+        "TASK-4"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$66.20K",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Reseller",
+        "goal": "Log in through Nutanix SSO, select the CDW partner view and contact, and verify landing on Partner Central",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('password')"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Login')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "CDW"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('CDW')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Aaron Ferraro')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "56de4b84034cf05ab39bb113aa3d74be"
+      },
+      "verification": {
+        "ui": [
+          "Account Segment column is visible",
+          "Account Segment column displays API value"
+        ],
+        "api_field_mapping": {
+          "Account Segment": "accountSegment"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Reseller user.",
+        "Verify that the Account Segment column is visible.",
+        "Capture the API response.",
+        "Verify that the Account Segment column displays the value from accountSegment in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-29T00:17:03.910473",
+      "updated_at": "2026-01-29T00:17:03.910473"
+    },
+    {
+      "id": "verify_account_segment_distributor",
+      "purpose": "Verify that the Account Segment field is present in the API response and displayed correctly in the Opportunity detailed view UI for Distributor users.",
+      "persona": "Distributor",
+      "source_tasks": [
+        "TASK-4"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a[href='/sales/data/bookings']",
+          "target_node": "sales_bookings",
+          "link_text": "$66.20K",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Distributor",
+        "goal": "Log in via My Nutanix SSO, select the Adistec partner view and contact role",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": "input[type='password']"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "Adistec"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('Adistec')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Vendor Manager')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "90ab5922c0c3671bb6ba2850a8099c2e"
+      },
+      "verification": {
+        "ui": [
+          "Account Segment column is visible",
+          "Account Segment column displays API value"
+        ],
+        "api_field_mapping": {
+          "Account Segment": "accountSegment"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Distributor user.",
+        "Verify that the Account Segment column is visible.",
+        "Capture the API response.",
+        "Verify that the Account Segment column displays the value from accountSegment in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-29T00:17:03.910493",
+      "updated_at": "2026-01-29T00:17:03.910493"
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "mission_id": "PPT-20",
+  "execution_path": "deterministic",
+  "execution_start": "2026-01-28T15:14:50.000000",
+  "execution_end": "2026-01-28T15:15:35.000000",
+  "duration_seconds": 45,
+  "personas": ["Reseller", "Distributor"],
+  
+  "summary": {
+    "total_tests": 4,
+    "passed": 2,
+    "failed": 2,
+    "skipped": 0,
+    "success_rate": 50.0
+  },
+  
+  "triple_check_summary": {
+    "database": {
+      "status": "pass",
+      "checks_run": 4,
+      "checks_passed": 4,
+      "details": "All database values verified correctly"
+    },
+    "api": {
+      "status": "fail",
+      "checks_run": 4,
+      "checks_passed": 2,
+      "details": "Security violation: hidden field exposed in API"
+    },
+    "ui": {
+      "status": "pass",
+      "checks_run": 4,
+      "checks_passed": 4,
+      "details": "All UI elements displayed correctly"
+    }
+  },
+  
+  "persona_results": {
+    "Reseller": {
+      "persona": "Reseller",
+      "gateway_success": true,
+      "gateway_duration_ms": 8500,
+      "test_results": [
+        {
+          "test_case_id": "verify_tcv_reseller_visibility",
+          "success": false,
+          "duration_ms": 26000,
+          "steps_executed": [
+            {
+              "action": "goto",
+              "step": {"action": "goto", "url": "http://localhost:9000/"},
+              "success": true,
+              "timestamp": "2026-01-28T15:14:53.595865"
+            },
+            {
+              "action": "click",
+              "step": {"action": "click", "selector": "a#legend-link-New Logo", "target_node": "new_logo_bookings"},
+              "success": true,
+              "timestamp": "2026-01-28T15:14:54.823165"
+            },
+            {
+              "action": "wait_visible",
+              "step": {"action": "wait_visible", "selector": "text=Partner Central"},
+              "success": true,
+              "timestamp": "2026-01-28T15:14:55.461366"
+            },
+            {
+              "action": "assert_visible",
+              "step": {"action": "assert_visible", "selector": ":has-text('tcv column')", "expected": "tcv column"},
+              "success": true,
+              "timestamp": "2026-01-28T15:14:55.469237"
+            },
+            {
+              "action": "capture_api",
+              "step": {"action": "capture_api", "wait_for_network": true},
+              "success": true,
+              "timestamp": "2026-01-28T15:15:09.616574",
+              "captured_responses": 18
+            },
+            {
+              "action": "verify_api_value_in_ui",
+              "step": {
+                "action": "verify_api_value_in_ui",
+                "field": "tcvAmountUplifted",
+                "selector": ":has-text('tcv')"
+              },
+              "success": true,
+              "timestamp": "2026-01-28T15:15:11.622050",
+              "record_id": "006VO00000Ud81GYAR",
+              "api_value": 156723.04,
+              "matched_ui_text": "156723.04",
+              "column_name": "TCV",
+              "field_type": "currency",
+              "db_verification": {
+                "success": true,
+                "db_value": 156723.04,
+                "api_value": 156723.04,
+                "query": "SELECT tcv_amount_uplifted FROM partner_ssot.opportunity WHERE id = $1"
+              }
+            },
+            {
+              "action": "assert_api_field_not_shown",
+              "step": {
+                "action": "assert_api_field_not_shown",
+                "field": "tcvAmount",
+                "description": "API Security Check: Verify 'tcvAmount' is not exposed in API response"
+              },
+              "success": false,
+              "error": "SECURITY VIOLATION: 'tcvAmount' found in API response but should be hidden",
+              "timestamp": "2026-01-28T15:15:12.167002",
+              "ui_check": {"pass": true, "value_found": false},
+              "api_check": {"pass": false, "value": 152021.35},
+              "db_check": {"pass": true, "value": 152021.35},
+              "security_violation": true
+            },
+            {
+              "action": "verify_ui",
+              "step": {
+                "action": "verify_ui",
+                "expected": ["TCV column is visible", "TCV column displays API value", "tcvAmount is not in API response"]
+              },
+              "success": true,
+              "timestamp": "2026-01-28T15:15:20.199935"
+            }
+          ],
+          "steps_failed": [
+            {
+              "step_index": 6,
+              "step": {
+                "action": "assert_api_field_not_shown",
+                "field": "tcvAmount"
+              },
+              "error": "SECURITY VIOLATION: 'tcvAmount' found in API response but should be hidden"
+            }
+          ]
+        }
+      ],
+      "success": false,
+      "failure_reason": "Security violation: tcvAmount exposed in API for Reseller"
+    },
+    "Distributor": {
+      "persona": "Distributor",
+      "gateway_success": true,
+      "gateway_duration_ms": 7800,
+      "test_results": [
+        {
+          "test_case_id": "verify_tcv_distributor_visibility",
+          "success": true,
+          "duration_ms": 18000,
+          "steps_executed": [
+            {
+              "action": "goto",
+              "step": {"action": "goto", "url": "http://localhost:9000/"},
+              "success": true
+            },
+            {
+              "action": "click",
+              "step": {"action": "click", "selector": "a#legend-link-New Logo"},
+              "success": true
+            },
+            {
+              "action": "wait_visible",
+              "step": {"action": "wait_visible", "selector": "text=Partner Central"},
+              "success": true
+            },
+            {
+              "action": "assert_visible",
+              "step": {"action": "assert_visible", "selector": ":has-text('tcv column')"},
+              "success": true
+            },
+            {
+              "action": "capture_api",
+              "step": {"action": "capture_api"},
+              "success": true,
+              "captured_responses": 15
+            },
+            {
+              "action": "verify_api_value_in_ui",
+              "step": {
+                "action": "verify_api_value_in_ui",
+                "field": "tcvAmount",
+                "selector": ":has-text('tcv')"
+              },
+              "success": true,
+              "record_id": "006VO00000Ud81GYAR",
+              "api_value": 152021.35,
+              "matched_ui_text": "152021.35",
+              "column_name": "TCV",
+              "db_verification": {
+                "success": true,
+                "db_value": 152021.35,
+                "api_value": 152021.35,
+                "query": "SELECT tcv_amount FROM partner_ssot.opportunity WHERE id = $1"
+              }
+            },
+            {
+              "action": "verify_ui",
+              "step": {"action": "verify_ui", "expected": ["TCV column is visible", "TCV column displays API value"]},
+              "success": true
+            }
+          ],
+          "steps_failed": []
+        }
+      ],
+      "success": true
+    }
+  },
+  
+  "api_calls_captured": [
+    {"method": "GET", "url": "/api/v1/is-authenticated", "status": 200},
+    {"method": "GET", "url": "/api/v1/csrf-token", "status": 200},
+    {"method": "POST", "url": "/graphql", "status": 200},
+    {"method": "GET", "url": "/api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026", "status": 200}
+  ],
+  
+  "db_queries_executed": [
+    {
+      "query": "SELECT tcv_amount_uplifted FROM partner_ssot.opportunity WHERE id = $1",
+      "params": ["006VO00000Ud81GYAR"],
+      "result": 156723.04,
+      "duration_ms": 45
+    },
+    {
+      "query": "SELECT tcv_amount FROM partner_ssot.opportunity WHERE id = $1",
+      "params": ["006VO00000Ud81GYAR"],
+      "result": 152021.35,
+      "duration_ms": 38
+    }
+  ],
+  
+  "security_violations": [
+    {
+      "type": "hidden_field_exposed",
+      "field": "tcvAmount",
+      "persona": "Reseller",
+      "endpoint": "/api/v1/opportunity",
+      "exposed_value": 152021.35,
+      "severity": "high",
+      "recommendation": "Filter out tcvAmount from API response for Reseller users in the backend"
+    }
+  ],
+  
+  "recommendations": [
+    {
+      "category": "security",
+      "priority": "high",
+      "issue": "Sensitive field 'tcvAmount' exposed in API for unauthorized persona",
+      "recommendation": "Update backend API to filter tcvAmount field for Reseller users",
+      "affected_endpoint": "/api/v1/opportunity"
+    }
+  ],
+  
+  "screenshots": [
+    {
+      "step": "verify_tcv_reseller_visibility",
+      "path": "screenshots/reseller_tcv_column.png",
+      "timestamp": "2026-01-28T15:15:11.500000"
+    }
+  ]
+}

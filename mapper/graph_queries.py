@@ -56,6 +56,24 @@ class GraphQueries:
         with open(self.graph_path, 'r') as f:
             self.graph = json.load(f)
         
+        # If main graph is empty, try to use persona-specific graphs
+        if len(self.graph.get("nodes", [])) == 0 and not persona:
+            print(f"   ⚠️  Main graph is empty, looking for persona-specific graphs...")
+            for persona_graph in mapper_dir.glob("semantic_graph_*.json"):
+                if persona_graph.name == "semantic_graph.json":
+                    continue
+                try:
+                    with open(persona_graph, 'r') as f:
+                        pg_data = json.load(f)
+                    if len(pg_data.get("nodes", [])) > 0:
+                        self.graph = pg_data
+                        self.graph_path = persona_graph
+                        persona_name = persona_graph.stem.replace("semantic_graph_", "")
+                        print(f"   ✅ Using persona graph: {persona_graph.name} ({len(pg_data['nodes'])} nodes)")
+                        break
+                except Exception:
+                    pass
+        
         print(f"✅ Loaded graph from: {self.graph_path.name}")
         if persona:
             print(f"   Persona: {persona}")

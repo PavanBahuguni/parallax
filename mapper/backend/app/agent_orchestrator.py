@@ -137,15 +137,35 @@ class AgentOrchestrator:
         """Determine if semantic mapper needs to run based on PR changes.
         
         Checks:
-        1. If semantic_graph.json exists and is recent
-        2. If PR changes affect UI routes/components
-        3. If PR changes affect API endpoints
+        1. If persona-specific semantic graphs exist and have content
+        2. If semantic_graph.json exists and is recent
+        3. If PR changes affect UI routes/components
+        4. If PR changes affect API endpoints
         
         Returns:
             True if mapper should run, False if can skip
         """
         await self._send_update("analyze", "running", "Analyzing PR changes...")
         logger.info(f"Analyzing PR for task {task_id}, PR link: {pr_link}")
+        
+        # Check for persona-specific graphs first (these are the ones actually used)
+        persona_graphs_found = []
+        for persona_graph in self.mapper_dir.glob("semantic_graph_*.json"):
+            try:
+                graph_data = json.loads(persona_graph.read_text())
+                node_count = len(graph_data.get("nodes", []))
+                if node_count > 0:
+                    persona_name = persona_graph.stem.replace("semantic_graph_", "")
+                    persona_graphs_found.append((persona_name, node_count))
+            except Exception:
+                pass
+        
+        # If we have persona-specific graphs with content, skip mapping
+        if persona_graphs_found:
+            graph_summary = ", ".join([f"{name}: {count} nodes" for name, count in persona_graphs_found])
+            await self._send_update("analyze", "completed", f"Using existing persona graphs ({graph_summary})")
+            await self._send_update("map", "skipped", f"Found {len(persona_graphs_found)} persona graph(s)")
+            return False
         
         semantic_graph_path = self.mapper_dir / "semantic_graph.json"
         
@@ -154,6 +174,16 @@ class AgentOrchestrator:
             await self._send_update("analyze", "completed", "No existing graph found")
             await self._send_update("map", "running", "Building semantic graph...")
             return True
+        
+        # Check if main graph has content
+        try:
+            graph_data = json.loads(semantic_graph_path.read_text())
+            if len(graph_data.get("nodes", [])) == 0:
+                await self._send_update("analyze", "completed", "Graph is empty")
+                await self._send_update("map", "running", "Building semantic graph...")
+                return True
+        except Exception:
+            pass
         
         # If no PR link, run mapper to be safe
         if not pr_link:
@@ -374,7 +404,31 @@ class AgentOrchestrator:
             stdout, _ = await process.communicate()
             output = stdout.decode() if stdout else ""
             
-            # Check if semantic graph was created
+            # Check for persona-specific graphs first (these are the primary output)
+            total_nodes = 0
+            total_edges = 0
+            persona_count = 0
+            for persona_graph in self.mapper_dir.glob("semantic_graph_*.json"):
+                try:
+                    graph_data = json.loads(persona_graph.read_text())
+                    total_nodes += len(graph_data.get("nodes", []))
+                    total_edges += len(graph_data.get("edges", []))
+                    persona_count += 1
+                except Exception:
+                    pass
+            
+            if persona_count > 0 and total_nodes > 0:
+                await self._send_update("map", "completed", 
+                    f"Graph built: {total_nodes} nodes, {total_edges} edges ({persona_count} persona(s))")
+                return {
+                    "success": process.returncode == 0,
+                    "output": output,
+                    "nodes": total_nodes,
+                    "edges": total_edges,
+                    "personas": persona_count
+                }
+            
+            # Fallback: Check main semantic graph
             semantic_graph_path = self.mapper_dir / "semantic_graph.json"
             if semantic_graph_path.exists():
                 try:
@@ -538,6 +592,124 @@ class AgentOrchestrator:
         line = simple_prefix.sub('', line)
         
         return line.strip()
+    
+    async def _register_tests_in_cluster(self, task_id: str, mission_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Register test cases to the test repository with LLM-powered analysis.
+        
+        This integrates the ClusterManager with TestRepositoryManager to:
+        1. Extract complete test definitions from the mission
+        2. Use LLM to detect duplicates, conflicts, and merge candidates
+        3. Save tests to file-based repository (source of truth)
+        4. Sync to database for graph enrichment
+        
+        Args:
+            task_id: The task ID
+            mission_result: Result from run_context_processor
+            
+        Returns:
+            Registration result with merge/conflict info
+        """
+        result = {
+            "success": True,
+            "tests_registered": 0,
+            "tests_added": 0,
+            "tests_duplicates": 0,
+            "tests_conflicts": 0,
+            "tests_merged": 0,
+            "conflicts": [],
+            "warnings": []
+        }
+        
+        try:
+            mission_data = mission_result.get("mission", {})
+            if not mission_data:
+                # Try to load from file
+                mission_file_path = mission_result.get("mission_file")
+                if mission_file_path:
+                    mission_file = self.mapper_dir / mission_file_path
+                    if mission_file.exists():
+                        mission_data = json.loads(mission_file.read_text())
+            
+            if not mission_data:
+                logger.warning("No mission data available for clustering")
+                return result
+            
+            target_node = mission_data.get("target_node", "")
+            if not target_node:
+                logger.warning("No target_node in mission, skipping clustering")
+                return result
+            
+            await self._send_update("cluster", "running", f"Analyzing tests for {target_node}...")
+            
+            # Import ClusterManager (lazy import to avoid circular dependencies)
+            import sys
+            sys.path.insert(0, str(self.mapper_dir))
+            from cluster_manager import ClusterManager
+            
+            # Initialize ClusterManager
+            manager = ClusterManager(
+                project_id=self.project_id,
+                mapper_dir=self.mapper_dir
+            )
+            
+            # Use new repository-based registration with LLM analysis
+            await self._send_update("cluster", "running", f"Merging tests into repository for {target_node}...")
+            
+            repo_result = manager.register_tests_to_repository(
+                mission_data=mission_data,
+                task_id=task_id,
+                sync_to_db=True
+            )
+            
+            # Map repository result to our result structure
+            result["success"] = repo_result.get("success", False)
+            result["tests_added"] = repo_result.get("tests_added", 0)
+            result["tests_duplicates"] = repo_result.get("tests_duplicates", 0)
+            result["tests_conflicts"] = repo_result.get("tests_conflicts", 0)
+            result["tests_merged"] = repo_result.get("tests_merged", 0)
+            result["tests_registered"] = result["tests_added"] + result["tests_merged"]
+            result["warnings"] = repo_result.get("warnings", [])
+            
+            # Convert conflicts to old format for backward compatibility
+            for decision in repo_result.get("decisions", []):
+                if decision.get("action") == "conflict":
+                    result["conflicts"].append({
+                        "type": "conflict",
+                        "new_test_id": decision.get("test_id"),
+                        "reason": decision.get("reason", "")
+                    })
+            
+            # Send appropriate update based on result
+            if result["tests_conflicts"] > 0:
+                await self._send_update(
+                    "cluster", 
+                    "completed", 
+                    f"Added {result['tests_added']}, {result['tests_conflicts']} conflict(s) detected"
+                )
+            elif result["tests_duplicates"] > 0:
+                await self._send_update(
+                    "cluster", 
+                    "completed", 
+                    f"Added {result['tests_added']}, skipped {result['tests_duplicates']} duplicate(s)"
+                )
+            else:
+                await self._send_update(
+                    "cluster", 
+                    "completed", 
+                    f"Added {result['tests_added']} test(s) to repository '{target_node}'"
+                )
+            
+            logger.info(f"Repository registration complete: {result}")
+            
+        except Exception as e:
+            logger.warning(f"Cluster registration failed: {e}")
+            import traceback
+            traceback.print_exc()
+            result["success"] = False
+            result["warnings"].append(f"Clustering error: {str(e)[:100]}")
+            await self._send_update("cluster", "skipped", f"Clustering skipped: {str(e)[:50]}")
+        
+        return result
 
     async def run_executor(self, task_id: str, mission_file_path: Path) -> Dict[str, Any]:
         """Run executor to execute tests."""
@@ -965,6 +1137,9 @@ class AgentOrchestrator:
                 await self._send_update("workflow", "failed", "Mission generation failed")
                 results["overall_success"] = False
                 return results
+            
+            # Step 3.5: Register tests in cluster and tag semantic graph
+            await self._register_tests_in_cluster(task_id, mission_result)
             
             # Step 4: Execute tests
             # Handle None value explicitly (get() default only works if key is missing, not if value is None)

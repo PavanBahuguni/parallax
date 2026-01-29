@@ -1,0 +1,258 @@
+.project-graph-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px); /* Account for nav bar */
+  background: #f5f5f7;
+}
+
+.graph-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.back-link {
+  color: #646cff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.persona-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.persona-select-wrapper label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.persona-select-wrapper select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.persona-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.graph-stats-bar {
+  display: flex;
+  gap: 2rem;
+  padding: 0.75rem 1.5rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.graph-fullscreen-container {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.graph-fullscreen-container .graph-viewer-container {
+  height: 100% !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #fff;
+  border-radius: 12px;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.graph-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.75rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-dot.green {
+  background: #50c878;
+}
+
+.legend-dot.blue {
+  background: #4a90e2;
+}
+
+.legend-dot.orange {
+  background: #f39c12;
+}
+
+.legend-dot.gray {
+  background: #95a5a6;
+}
+
+.legend-tip {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.error-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+}
+
+.error-section h2 {
+  color: #e74c3c;
+}
+
+.error-section a {
+  color: #646cff;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .project-graph-page {
+    background: #121212;
+  }
+
+  .graph-page-header,
+  .graph-stats-bar,
+  .graph-legend-bar {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+
+  .header-left h1 {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .stat-value {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .persona-select-wrapper select,
+  .refresh-btn {
+    background: #2a2a2a;
+    border-color: #444;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .empty-state {
+    background: #1e1e1e;
+    color: #999;
+  }
+}

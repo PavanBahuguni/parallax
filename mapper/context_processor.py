@@ -2105,9 +2105,8 @@ Respond with ONLY the JSON.
             # Pattern: "Verify that the TCV column displays the value from the tcvAmountUplifted field in the captured API response"
             (r"verify (?:that )?(?:the )?(.+?) (?:column|field) (?:displays|shows) (?:the )?value (?:from )?(?:the )?(\w+) field (?:in )?(?:the )?(?:captured )?(?:api )?response\.?$", "verify_api_value_in_ui"),
             
-            # Column visibility patterns (various phrasings)
-            (r"verify (?:that )?(?:the )?(?:TCV|tcv) column is visible(?:\s+(?:in the UI|on (?:the )?page))?\.?$", "assert_tcv_visible"),
-            (r"verify (?:that )?(?:the )?(\w+) column is visible(?:\s+(?:in the UI|on (?:the )?page))?\.?$", "assert_column_visible"),
+            # Column visibility patterns (various phrasings) - generic, works with any column name
+            (r"verify (?:that )?(?:the )?(.+?) column is visible(?:\s+(?:in the UI|on (?:the )?page))?\.?$", "assert_column_visible"),
             (r"for each .+(?:row|record).+verify (?:that )?(?:the )?(\w+) column is visible\.?$", "assert_column_visible"),
             (r"(?:for each .+)?verify (?:that )?(?:the )?(\w+) column (?:is )?(?:visible|displayed|shown)(?:\s+(?:in|on) .+)?\.?$", "assert_column_visible"),
             
@@ -2278,14 +2277,14 @@ Respond with ONLY the JSON.
                     
                     elif action_type == "verify_api_value_in_ui":
                         # Extract UI element and API field from matched groups
-                        ui_element = groups[0] if groups else ""  # e.g., "TCV column"
+                        ui_element = groups[0] if groups else ""  # e.g., "Account Segment column"
                         api_field_lower = groups[1] if len(groups) > 1 else ""  # lowercase from regex
                         
                         # Preserve original case for API field by finding it in original step_text
                         # The regex matched on lowercase, but we need the original case
                         api_field = api_field_lower
-                        # Look for common camelCase patterns in original text
-                        camel_match = re.search(r'\b(tcvAmountUplifted|tcvAmount|[a-z]+[A-Z][a-zA-Z]*)\b', step_text)
+                        # Look for any camelCase patterns in original text (generic pattern)
+                        camel_match = re.search(r'\b([a-z]+[A-Z][a-zA-Z]*)\b', step_text)
                         if camel_match:
                             api_field = camel_match.group(1)
                         
@@ -2294,19 +2293,19 @@ Respond with ONLY the JSON.
                         ui_lower = ui_element.lower()
                         if "column" in ui_lower:
                             # Look for table cells in that column
-                            column_name = ui_element.replace("column", "").strip()
-                            selector = f"table td, table th:has-text('{column_name}') ~ td"
+                            column_name = ui_element.replace("column", "").replace("Column", "").strip()
+                            selector = f":has-text('{column_name.strip()}')"
                         elif "field" in ui_lower:
-                            field_name = ui_element.replace("field", "").strip()
+                            field_name = ui_element.replace("field", "").replace("Field", "").strip()
                             selector = f"[data-field='{field_name}'], :has-text('{field_name}')"
                         else:
                             selector = f":has-text('{ui_element.strip()}')"
                         
+                        # Don't hardcode format - let the executor infer it from field name and value
                         deterministic_steps.append({
                             "action": "verify_api_value_in_ui",
                             "field": api_field.strip(),  # API field to extract (preserved case)
                             "selector": selector,  # Where to look in UI
-                            "format": "currency",  # Assume currency for financial values
                             "description": step_text
                         })
                         action_added = True
@@ -2324,9 +2323,9 @@ Respond with ONLY the JSON.
                     
                     elif action_type == "extract_api_field":
                         field_lower = groups[0] if groups else ""
-                        # Preserve original case for API field
+                        # Preserve original case for API field (generic camelCase pattern)
                         field = field_lower
-                        camel_match = re.search(r'\b(tcvAmountUplifted|tcvAmount|[a-z]+[A-Z][a-zA-Z]*)\b', step_text)
+                        camel_match = re.search(r'\b([a-z]+[A-Z][a-zA-Z]*)\b', step_text)
                         if camel_match:
                             field = camel_match.group(1)
                         deterministic_steps.append({
@@ -2337,26 +2336,22 @@ Respond with ONLY the JSON.
                         action_added = True
                         break
                     
-                    elif action_type == "assert_tcv_visible":
-                        # Specific handler for TCV column verification
-                        deterministic_steps.append({
-                            "action": "assert_visible",
-                            "selector": "th:has-text('TCV'), span.title:has-text('TCV')",
-                            "expected": "TCV",
-                            "description": step_text
-                        })
-                        action_added = True
-                        break
-                    
                     elif action_type == "assert_column_visible":
                         column_name_raw = groups[0] if groups else ""
                         # Look for the original case in step_text (since we matched on lowercase)
                         # Find the column name in original text to preserve case
-                        column_match = re.search(r'(?:the\s+)?(\w+)\s+column', step_text, re.IGNORECASE)
+                        # Support multi-word column names like "Account Segment"
+                        column_match = re.search(r'(?:the\s+)?(.+?)\s+column', step_text, re.IGNORECASE)
                         if column_match:
-                            column_name = column_match.group(1)
+                            column_name = column_match.group(1).strip()
                         else:
-                            column_name = column_name_raw.upper() if len(column_name_raw) <= 4 else column_name_raw.title()
+                            column_name = column_name_raw.strip()
+                        
+                        # Title case for multi-word, uppercase for short abbreviations (3 chars or less)
+                        if len(column_name) <= 3 and column_name.isalpha():
+                            column_name = column_name.upper()
+                        else:
+                            column_name = column_name.title()
                         
                         deterministic_steps.append({
                             "action": "assert_visible",
@@ -2369,12 +2364,13 @@ Respond with ONLY the JSON.
                     
                     elif action_type == "assert_field_not_visible":
                         field_lower = groups[0] if groups else ""
-                        # Preserve original case for API field
+                        # Preserve original case for API field - generic pattern for camelCase fields
                         field_name = field_lower
-                        camel_match = re.search(r'\b(tcvAmountUplifted|tcvAmount|[a-z]+[A-Z][a-zA-Z]*)\b', step_text)
+                        # Match any camelCase field name (generic pattern)
+                        camel_match = re.search(r'\b([a-z]+[A-Z][a-zA-Z]*)\b', step_text)
                         if camel_match:
                             field_name = camel_match.group(1)
-                        # For tcvAmount vs tcvAmountUplifted, we verify the raw field isn't in the API response
+                        # Verify the field isn't in the API response
                         # This is an API security check - the field should not be returned to this persona
                         field_name_clean = field_name.strip()
                         deterministic_steps.append({
@@ -2426,24 +2422,21 @@ Respond with ONLY the JSON.
             if isinstance(ui_verification, dict):
                 # Look for field-specific verifications
                 for key, value in ui_verification.items():
-                    # Keys like "tcv_amount_uplifted_displayed" indicate API field verification
-                    if "uplifted" in key.lower() or "amount" in key.lower():
-                        # Extract field name from key
-                        field_match = re.search(r'(tcv\w+|amount\w+)', key, re.IGNORECASE)
-                        if field_match:
-                            field_name = field_match.group(1)
-                            # Convert snake_case to camelCase
-                            parts = field_name.split('_')
-                            camel_field = parts[0] + ''.join(p.title() for p in parts[1:])
-                            
-                            deterministic_steps.append({
-                                "action": "verify_api_value_in_ui",
-                                "field": camel_field,
-                                "selector": "table tbody td",
-                                "format": "currency",
-                                "endpoint": "/api/v1/opportunity",
-                                "description": f"Verify {camel_field} from API is displayed in UI"
-                            })
+                    # Keys containing field names (snake_case) indicate API field verification
+                    # Generic pattern: look for keys that suggest field verification
+                    if "_displayed" in key.lower() or "_visible" in key.lower() or "_value" in key.lower():
+                        # Extract field name from key (remove suffixes like _displayed, _visible)
+                        field_name = re.sub(r'_(displayed|visible|value|shown)$', '', key, flags=re.IGNORECASE)
+                        # Convert snake_case to camelCase
+                        parts = field_name.split('_')
+                        camel_field = parts[0] + ''.join(p.title() for p in parts[1:])
+                        
+                        deterministic_steps.append({
+                            "action": "verify_api_value_in_ui",
+                            "field": camel_field,
+                            "selector": "table tbody td",
+                            "description": f"Verify {camel_field} from API is displayed in UI"
+                        })
                     else:
                         deterministic_steps.append({
                             "action": "verify_ui",
@@ -3364,7 +3357,34 @@ def main():
     print()
     
     # Initialize components
-    graph_queries = GraphQueries(graph_path=args.graph)
+    # Check if main graph is empty and use persona-specific graphs instead
+    graph_path = args.graph
+    mapper_dir = Path(__file__).parent
+    
+    try:
+        main_graph = mapper_dir / graph_path
+        if main_graph.exists():
+            import json as _json
+            graph_data = _json.loads(main_graph.read_text())
+            if len(graph_data.get("nodes", [])) == 0:
+                print(f"   ⚠️  Main graph '{graph_path}' is empty, looking for persona-specific graphs...")
+                # Find first persona graph with content
+                for persona_graph in mapper_dir.glob("semantic_graph_*.json"):
+                    if persona_graph.name == "semantic_graph.json":
+                        continue  # Skip main graph
+                    try:
+                        pg_data = _json.loads(persona_graph.read_text())
+                        if len(pg_data.get("nodes", [])) > 0:
+                            graph_path = persona_graph.name
+                            persona_name = persona_graph.stem.replace("semantic_graph_", "")
+                            print(f"   ✅ Using persona graph: {graph_path} ({len(pg_data['nodes'])} nodes)")
+                            break
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"   ⚠️  Error checking graph: {e}")
+    
+    graph_queries = GraphQueries(graph_path=graph_path)
     llm = FixedNutanixChatModel(api_url=api_url, api_key=api_key, model_name=model)
     
     # Initialize Ollama for PR summary extraction (optional, faster/cheaper)

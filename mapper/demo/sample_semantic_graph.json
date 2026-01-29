@@ -1,0 +1,302 @@
+{
+  "description": "Sample semantic graph for Sales Bookings page - demonstrates the 'Digital Twin' concept",
+  
+  "nodes": [
+    {
+      "id": "partner_dashboard",
+      "url": "http://localhost:9000/",
+      "semantic_name": "partner_dashboard",
+      "title": "Partner Central",
+      "display_header": "Partner Central",
+      "description": "The Partner Central home page presents a collection of headline sections that highlight recent announcements, marketing insights, product availability, and upcoming partner programs. Its primary purpose is to give logged-in users a quick overview of the latest news, stories, and resources.",
+      "headers": [
+        "Partner Central",
+        "View As",
+        "Sales Overview",
+        "Elevate Partner Program & Incentives"
+      ],
+      "primary_entity": null,
+      "components": [
+        {
+          "type": "button",
+          "role": "button_view_as",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "View As",
+          "stable_text": "View As",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_quarter_selector",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton",
+          "text": "Nutanix FY26 Q1",
+          "stable_text": "Nutanix FY26 Q1",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx:has-text('Global Filters')",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [],
+          "impacts_db": null
+        }
+      ],
+      "active_apis": [],
+      "context": {
+        "persona": "Reseller"
+      }
+    },
+    {
+      "id": "sales_bookings",
+      "url": "http://localhost:9000/sales/data/bookings",
+      "semantic_name": "sales_bookings",
+      "title": "Partner Central",
+      "display_header": "Sales Bookings",
+      "description": "The page is a sales-data dashboard within Partner Central that lists individual booking opportunities in a tabular view. Its primary function is to let resellers see and filter details of each opportunity—such as names, IDs, customer, segment, type, stage, forecast category, product lineup, and associated reseller or distributor.",
+      "headers": [
+        "Partner Central",
+        "View As",
+        "Sales Data"
+      ],
+      "primary_entity": "Graphql",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_bookings_filter",
+          "selector": "button.ntnx-truncate",
+          "text": "Bookings (New Logo, Expansion, Others)",
+          "stable_text": "Bookings",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings",
+            "POST /graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_export",
+          "selector": "button.ntnx:has-text('Export')",
+          "text": "Export",
+          "stable_text": "Export",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_name",
+          "selector": "th:has-text('Opportunity Name')",
+          "text": "Opportunity Name",
+          "table_index": 0,
+          "column_index": 0,
+          "is_sortable": true,
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_id",
+          "selector": "th:has-text('Opportunity ID')",
+          "text": "Opportunity ID",
+          "table_index": 0,
+          "column_index": 1,
+          "is_sortable": true,
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_customer_name",
+          "selector": "th:has-text('Customer Name')",
+          "text": "Customer Name",
+          "table_index": 0,
+          "column_index": 2,
+          "is_sortable": true,
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_account_segment",
+          "selector": "th:has-text('Account Segment')",
+          "text": "Account Segment",
+          "table_index": 0,
+          "column_index": 3,
+          "is_sortable": true,
+          "triggers_api": [],
+          "note": "Added in PPT-21 - displays accountSegment from API"
+        },
+        {
+          "type": "table_column",
+          "role": "column_tcv",
+          "selector": "th:has-text('TCV')",
+          "text": "TCV",
+          "table_index": 0,
+          "column_index": 16,
+          "is_sortable": true,
+          "triggers_api": [],
+          "note": "PPT-20 - Resellers see tcvAmountUplifted, Distributors see tcvAmount"
+        },
+        {
+          "type": "table_column",
+          "role": "column_earned_incentives",
+          "selector": "th:has-text('Earned Incentives')",
+          "text": "Earned Incentives",
+          "table_index": 0,
+          "column_index": 17,
+          "is_sortable": false,
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_estimated_incentives",
+          "selector": "th:has-text('Estimated Incentives')",
+          "text": "Estimated Incentives",
+          "table_index": 0,
+          "column_index": 18,
+          "is_sortable": false,
+          "triggers_api": []
+        }
+      ],
+      "active_apis": [
+        "POST /graphql",
+        "GET /api/v1/opportunity?category=Bookings",
+        "GET /api/v1/is-authenticated"
+      ],
+      "context": {
+        "persona": "Reseller"
+      }
+    },
+    {
+      "id": "new_logo_bookings",
+      "url": "http://localhost:9000/sales/data/bookings?subCategory=New+Logo",
+      "semantic_name": "new_logo_bookings",
+      "title": "Partner Central",
+      "display_header": "New Logo Bookings",
+      "description": "The page is a 'Sales Data – Bookings' view filtered to the New Logo sub-category, showing a list of opportunity records in a tabular format. Its primary function is to let a logged-in reseller examine detailed booking information for new customer acquisitions.",
+      "headers": [
+        "Partner Central",
+        "View As",
+        "Sales Data"
+      ],
+      "primary_entity": "Graphql",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_bookings_new_logo",
+          "selector": "button.ntnx-truncate",
+          "text": "Bookings (New Logo)",
+          "stable_text": "Bookings",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo",
+            "POST /graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "table_column",
+          "role": "column_tcv",
+          "selector": "th:has-text('TCV')",
+          "text": "TCV",
+          "table_index": 0,
+          "column_index": 16,
+          "is_sortable": true,
+          "triggers_api": []
+        }
+      ],
+      "active_apis": [
+        "POST /graphql",
+        "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo",
+        "GET /api/v1/is-authenticated"
+      ],
+      "context": {
+        "persona": "Reseller"
+      }
+    }
+  ],
+  
+  "edges": [
+    {
+      "from": "partner_dashboard",
+      "to": "sales_bookings",
+      "action": "navigate",
+      "selector": "a[href='/sales/data/bookings']",
+      "link_text": "$2.13M",
+      "description": "Click on total bookings amount to view all bookings"
+    },
+    {
+      "from": "partner_dashboard",
+      "to": "new_logo_bookings",
+      "action": "navigate",
+      "selector": "a#legend-link-New Logo",
+      "link_text": "$156.72K (1)",
+      "link_id": "legend-link-New Logo",
+      "description": "Click on New Logo segment to filter bookings"
+    },
+    {
+      "from": "sales_bookings",
+      "to": "new_logo_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Filter",
+      "description": "Filter bookings by sub-category"
+    }
+  ],
+  
+  "api_endpoints": {
+    "POST /graphql": {
+      "method": "POST",
+      "endpoint": "/graphql",
+      "nodes": ["sales_bookings", "new_logo_bookings"]
+    },
+    "GET /api/v1/opportunity": {
+      "method": "GET",
+      "endpoint": "/api/v1/opportunity",
+      "nodes": ["sales_bookings", "new_logo_bookings"],
+      "parameters": ["category", "subCategories", "quarter"]
+    },
+    "GET /api/v1/is-authenticated": {
+      "method": "GET",
+      "endpoint": "/api/v1/is-authenticated",
+      "nodes": ["sales_bookings", "new_logo_bookings"]
+    }
+  },
+  
+  "db_tables": {
+    "opportunity": {
+      "schema": "partner_ssot",
+      "columns": [
+        "id",
+        "name",
+        "customer_name",
+        "account_segment",
+        "tcv_amount",
+        "tcv_amount_uplifted",
+        "opportunity_type",
+        "opportunity_stage",
+        "close_date"
+      ],
+      "api_field_mapping": {
+        "id": "id",
+        "name": "opportunityName",
+        "customer_name": "customerName",
+        "account_segment": "accountSegment",
+        "tcv_amount": "tcvAmount",
+        "tcv_amount_uplifted": "tcvAmountUplifted"
+      }
+    }
+  },
+  
+  "entrypoints": {
+    "Reseller": "partner_dashboard",
+    "Distributor": "partner_dashboard",
+    "Internal": "partner_dashboard"
+  },
+  
+  "metadata": {
+    "created_at": "2026-01-28T10:00:00Z",
+    "last_updated": "2026-01-28T15:00:00Z",
+    "version": "1.0",
+    "persona": "Reseller"
+  }
+}

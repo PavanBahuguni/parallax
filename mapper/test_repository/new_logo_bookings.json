@@ -1,0 +1,240 @@
+{
+  "node_id": "new_logo_bookings",
+  "last_updated": "2026-01-29T00:00:59.967465",
+  "tests": [
+    {
+      "id": "verify_tcv_reseller_visibility",
+      "purpose": "Ensure that Reseller users see the TCV column displaying tcvAmountUplifted and that tcvAmount is not exposed in the API response.",
+      "persona": "Reseller",
+      "source_tasks": [
+        "TASK-3"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a#legend-link-New Logo",
+          "target_node": "new_logo_bookings",
+          "link_text": "$15.56K (1)",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Reseller",
+        "goal": "Log in through Nutanix SSO, select the CDW partner view and contact, and verify landing on Partner Central",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('password')"
+          },
+          {
+            "action": "fill",
+            "selector": "input[placeholder='Password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Login')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "CDW"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('CDW')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Aaron Ferraro')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "56de4b84034cf05ab39bb113aa3d74be"
+      },
+      "verification": {
+        "ui": [
+          "TCV column is visible",
+          "TCV column displays API value",
+          "tcvAmount is not in API response"
+        ],
+        "api_field_mapping": {
+          "TCV": "tcvAmountUplifted"
+        },
+        "hidden_api_fields": [
+          "tcvAmount"
+        ],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Reseller user.",
+        "Verify that the TCV column is visible.",
+        "Capture the API response.",
+        "Verify that the TCV column displays the value from tcvAmountUplifted in the API response.",
+        "Verify that tcvAmount is NOT in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.921009",
+      "updated_at": "2026-01-28T23:57:39.921009"
+    },
+    {
+      "id": "verify_tcv_distributor_visibility",
+      "purpose": "Ensure that Distributor users see the TCV column displaying tcvAmount.",
+      "persona": "Distributor",
+      "source_tasks": [
+        "TASK-3"
+      ],
+      "status": "active",
+      "navigation_path": [
+        {
+          "action": "goto",
+          "url": "http://localhost:9000/"
+        },
+        {
+          "action": "click",
+          "selector": "a#legend-link-New Logo",
+          "target_node": "new_logo_bookings",
+          "link_text": "$15.56K (1)",
+          "href": null
+        },
+        {
+          "action": "wait_visible",
+          "selector": "text=Partner Central",
+          "description": "Wait for page load (captured header: 'Partner Central')"
+        }
+      ],
+      "gateway_plan": {
+        "persona": "Distributor",
+        "goal": "Log in via My Nutanix SSO, select the Adistec partner view and contact role",
+        "steps": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In With My Nutanix')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "stage-my.nutanix.com"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='username']",
+            "value": "env(LOGIN_USERNAME)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Continue')"
+          },
+          {
+            "action": "wait_visible",
+            "selector": "input[type='password']"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='password']",
+            "value": "env(LOGIN_PASSWORD)"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Log In')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          },
+          {
+            "action": "wait_visible",
+            "selector": ":has-text('Partner Central')"
+          },
+          {
+            "action": "fill",
+            "selector": ".view-as-partner-input",
+            "value": "Adistec"
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-partner-popup div:has-text('Adistec')",
+            "exact_match": true
+          },
+          {
+            "action": "click",
+            "selector": ".view-as-select-contact-popup div:has-text('Vendor Manager')"
+          },
+          {
+            "action": "assert_url_contains",
+            "text": "localhost:9000"
+          }
+        ],
+        "instructions_hash": "90ab5922c0c3671bb6ba2850a8099c2e"
+      },
+      "verification": {
+        "ui": [
+          "TCV column is visible",
+          "TCV column displays API value"
+        ],
+        "api_field_mapping": {
+          "TCV": "tcvAmount"
+        },
+        "hidden_api_fields": [],
+        "api": null,
+        "db": null
+      },
+      "execution_steps": [
+        "Log in as a Distributor user.",
+        "Verify that the TCV column is visible.",
+        "Capture the API response.",
+        "Verify that the TCV column displays the value from tcvAmount in the API response."
+      ],
+      "action_type": "verify",
+      "component_selector": "button.ntnx-truncate",
+      "component_role": "button_bookings",
+      "field_selectors": {},
+      "test_data": {},
+      "created_at": "2026-01-28T23:57:39.921214",
+      "updated_at": "2026-01-28T23:57:39.921214"
+    }
+  ]
+}

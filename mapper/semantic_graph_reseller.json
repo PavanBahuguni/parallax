@@ -6,7 +6,7 @@
       "semantic_name": "partner_dashboard",
       "title": "Partner Central",
       "display_header": "Partner Central",
-      "description": "The Partner Central home page presents a collection of headline banners and sections that highlight the latest partner\u2011focused news, product announcements, and program updates from Cisco, Pure Storage, and Nutanix. Its primary purpose is to give resellers a quick overview of current marketing insights, new product availability, and upcoming partner initiatives so they can stay informed and act on the most recent opportunities. Visible features include rotating hero messages, thematic call\u2011outs such as \u201cStronger Together\u201d and \u201cDriving the Hybrid Revolution,\u201d and links to deeper content about marketing insights, product releases, and the FY26 Elevate Partner Program.",
+      "description": "The Partner Central home page presents a collection of headline sections that highlight recent announcements, marketing insights, product availability, and upcoming partner programs from Cisco, Pure Storage, and Nutanix. Its primary purpose is to give logged\u2011in resellers a quick overview of the latest news, stories, and resources they need to stay informed and promote the partners\u2019 solutions. The visible features include a series of banner\u2011style headers for each major update and a central call\u2011to\u2011action inviting users to \u201ccatch up on all the latest updates, stories, and insights.\u201d",
       "headers": [
         "Cisco, Pure Storage, and Nutanix: Stronger Together",
         "Introducing Marketing Insights",
@@ -43,7 +43,7 @@
         {
           "type": "button",
           "role": "button_announcements",
-          "selector": "button#tab-item-id-prefix-27-1",
+          "selector": "button#tab-item-id-prefix-51-1",
           "text": "Announcements",
           "stable_text": "Announcements",
           "triggers_api": [],
@@ -249,37 +249,10 @@
         },
         {
           "type": "button",
-          "role": "button_allow_all",
-          "selector": "button#accept-recommended-btn-handler",
-          "text": "Allow All",
-          "stable_text": "Allow All",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_32",
-          "selector": "button:nth-of-type(33)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_33",
-          "selector": "button:nth-of-type(34)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
           "triggers_api": [],
           "impacts_db": null
         },
@@ -312,7 +285,16 @@
         },
         {
           "type": "button",
-          "role": "button_40",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_39",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -321,28 +303,10 @@
         },
         {
           "type": "button",
-          "role": "button_allow_all",
-          "selector": "button#accept-recommended-btn-handler",
-          "text": "Allow All",
-          "stable_text": "Allow All",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_42",
-          "selector": "button:nth-of-type(43)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
           "triggers_api": [],
           "impacts_db": null
         },
@@ -374,10 +338,19 @@
           "impacts_db": null
         },
         {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
           "type": "list",
-          "role": "category_filter_list",
+          "role": "price_list",
           "selector": "ul:nth-of-type(1)",
-          "item_count": 1,
+          "item_count": 3,
           "triggers_api": [],
           "impacts_db": null
         },
@@ -385,6 +358,22 @@
           "type": "list",
           "role": "checkbox_list",
           "selector": "ul:nth-of-type(2)",
+          "item_count": 1,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "pricing_list",
+          "selector": "ul:nth-of-type(3)",
+          "item_count": 2,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(4)",
           "item_count": 1,
           "triggers_api": [],
           "impacts_db": null
@@ -481,7 +470,7 @@
       "semantic_name": "sales_bookings",
       "title": "Partner Central",
       "display_header": "Sales Bookings",
-      "description": "The page is a \u201cSales\u202fData \u2013 Bookings\u201d view within Partner Central that lists individual booking opportunities in a tabular format. Its primary function is to let a reseller see the details of each opportunity\u2014such as name, ID, customer, segment, type, stage, forecast category, products, and the associated reseller and distributor\u2014so they can review and manage their sales pipeline. The key visible sections are the page header with navigation controls (including \u201cView As\u201d) and the comprehensive table that organizes all opportunity attributes for quick reference.",
+      "description": "The page is a sales\u2011data dashboard within Partner Central that lists individual booking opportunities in a tabular view. Its primary function is to let resellers see and filter details of each opportunity\u2014such as names, IDs, customer, segment, type, stage, forecast category, product lineup, and associated reseller or distributor. The main visible sections are the page header with navigation controls (including \u201cView As\u201d) and the comprehensive table that organizes all of these opportunity attributes for quick reference.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Partner Central",
@@ -540,7 +529,7 @@
         "10 Jul 2025",
         "12 Aug 2025"
       ],
-      "primary_entity": "Api",
+      "primary_entity": "Graphql",
       "components": [
         {
           "type": "button",
@@ -548,7 +537,11 @@
           "selector": "button.ntnx-dropdown-trigger",
           "text": "Nutanix P",
           "stable_text": "Nutanix P",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -557,7 +550,11 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -566,7 +563,24 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_exit",
+          "selector": "button.ntnx-tooltip-toggle",
+          "text": "Exit",
+          "stable_text": "Exit",
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -575,16 +589,24 @@
           "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
           "text": "Nutanix FY26 Q1",
           "stable_text": "Nutanix FY26 Q1",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
-          "role": "button_4",
+          "role": "button_5",
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -593,7 +615,11 @@
           "selector": "button.ntnx",
           "text": "View Analysis\n0",
           "stable_text": "View Analysis\n0",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -602,25 +628,37 @@
           "selector": "button.ntnx",
           "text": "Global Filters",
           "stable_text": "Global Filters",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_7",
-          "selector": "button.FilterHeader---sizeButton---KVtAS",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
           "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
           "selector": "button.close-btn",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -629,7 +667,11 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -638,7 +680,11 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -647,7 +693,11 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -656,7 +706,11 @@
           "selector": "button.ntnx-truncate",
           "text": "Bookings (New Logo, Expansion, Others)",
           "stable_text": "Bookings",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -665,7 +719,11 @@
           "selector": "button.ntnx",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -674,7 +732,11 @@
           "selector": "button.ntnx",
           "text": "Export",
           "stable_text": "Export",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -683,52 +745,37 @@
           "selector": "button.feedback-button",
           "text": "Feedback",
           "stable_text": "Feedback",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
-          "role": "button_24",
+          "role": "button_53",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
-          "role": "button_allow_all",
-          "selector": "button#accept-recommended-btn-handler",
-          "text": "Allow All",
-          "stable_text": "Allow All",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_27",
-          "selector": "button:nth-of-type(28)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
-          "triggers_api": [],
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -737,7 +784,11 @@
           "selector": "button#clear-filters-handler",
           "text": "Clear",
           "stable_text": "Clear",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -746,7 +797,11 @@
           "selector": "button#filter-apply-handler",
           "text": "Apply",
           "stable_text": "Apply",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -755,16 +810,11 @@
           "selector": "button#filter-cancel-handler",
           "text": "Cancel",
           "stable_text": "Cancel",
-          "triggers_api": [],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_34",
-          "selector": "button#close-pc-btn-handler",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -773,25 +823,37 @@
           "selector": "button#accept-recommended-btn-handler",
           "text": "Allow All",
           "stable_text": "Allow All",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
+          "role": "button_62",
+          "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
-          "triggers_api": [],
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -800,7 +862,11 @@
           "selector": "button#clear-filters-handler",
           "text": "Clear",
           "stable_text": "Clear",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -809,7 +875,11 @@
           "selector": "button#filter-apply-handler",
           "text": "Apply",
           "stable_text": "Apply",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
@@ -818,23 +888,46 @@
           "selector": "button#filter-cancel-handler",
           "text": "Cancel",
           "stable_text": "Cancel",
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
+            "POST http://localhost:9000/graphql"
+          ],
           "impacts_db": null
         },
         {
           "type": "list",
-          "role": "the_snippet_you",
+          "role": "only_the_structure_of_a_table",
           "selector": "table:nth-of-type(1)",
-          "item_count": 3,
-          "triggers_api": [],
+          "item_count": 15,
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026"
+          ],
           "impacts_db": null
         },
         {
           "type": "list",
-          "role": "checkbox_list",
+          "role": "pricing_list",
           "selector": "ul:nth-of-type(2)",
-          "item_count": 1,
-          "triggers_api": [],
+          "item_count": 3,
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026"
+          ],
           "impacts_db": null
         },
         {
@@ -842,14 +935,1292 @@
           "role": "checkbox_list",
           "selector": "ul:nth-of-type(3)",
           "item_count": 1,
-          "triggers_api": [],
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026"
+          ],
           "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "price_list",
+          "selector": "ul:nth-of-type(4)",
+          "item_count": 2,
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(5)",
+          "item_count": 1,
+          "triggers_api": [
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_name",
+          "selector": "th:has-text('Opportunity Name')",
+          "text": "Opportunity Name",
+          "table_index": 0,
+          "column_index": 0,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_id",
+          "selector": "th:has-text('Opportunity ID')",
+          "text": "Opportunity ID",
+          "table_index": 0,
+          "column_index": 1,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_customer_name",
+          "selector": "th:has-text('Customer Name')",
+          "text": "Customer Name",
+          "table_index": 0,
+          "column_index": 2,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_account_segment",
+          "selector": "th:has-text('Account Segment')",
+          "text": "Account Segment",
+          "table_index": 0,
+          "column_index": 3,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_type",
+          "selector": "th:has-text('Opportunity Type')",
+          "text": "Opportunity Type",
+          "table_index": 0,
+          "column_index": 4,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_stage",
+          "selector": "th:has-text('Opportunity Stage')",
+          "text": "Opportunity Stage",
+          "table_index": 0,
+          "column_index": 5,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_forecast_category",
+          "selector": "th:has-text('Forecast Category')",
+          "text": "Forecast Category",
+          "table_index": 0,
+          "column_index": 6,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_products",
+          "selector": "th:has-text('Products')",
+          "text": "Products",
+          "table_index": 0,
+          "column_index": 7,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_reseller_name",
+          "selector": "th:has-text('Reseller Name')",
+          "text": "Reseller Name",
+          "table_index": 0,
+          "column_index": 8,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_distributor_name",
+          "selector": "th:has-text('Distributor Name')",
+          "text": "Distributor Name",
+          "table_index": 0,
+          "column_index": 9,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_id",
+          "selector": "th:has-text('Deal Reg ID')",
+          "text": "Deal Reg ID",
+          "table_index": 0,
+          "column_index": 10,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_expiry_date",
+          "selector": "th:has-text('Deal Reg Expiry Date')",
+          "text": "Deal Reg Expiry Date",
+          "table_index": 0,
+          "column_index": 11,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_status",
+          "selector": "th:has-text('Deal Reg Status')",
+          "text": "Deal Reg Status",
+          "table_index": 0,
+          "column_index": 12,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_close_date",
+          "selector": "th:has-text('Close Date')",
+          "text": "Close Date",
+          "table_index": 0,
+          "column_index": 13,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_open_date",
+          "selector": "th:has-text('Open Date')",
+          "text": "Open Date",
+          "table_index": 0,
+          "column_index": 14,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_last_modified_date",
+          "selector": "th:has-text('Last Modified Date')",
+          "text": "Last Modified Date",
+          "table_index": 0,
+          "column_index": 15,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_tcv",
+          "selector": "th:has-text('TCV')",
+          "text": "TCV",
+          "table_index": 0,
+          "column_index": 16,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_earned_incentives",
+          "selector": "th:has-text('Earned Incentives')",
+          "text": "Earned Incentives",
+          "table_index": 0,
+          "column_index": 17,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_estimated_incentives",
+          "selector": "th:has-text('Estimated Incentives')",
+          "text": "Estimated Incentives",
+          "table_index": 0,
+          "column_index": 18,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_account_owner",
+          "selector": "th:has-text('Nutanix Account Owner')",
+          "text": "Nutanix Account Owner",
+          "table_index": 0,
+          "column_index": 19,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_opportunity_sales_owner",
+          "selector": "th:has-text('Nutanix Opportunity Sales Owner')",
+          "text": "Nutanix Opportunity Sales Owner",
+          "table_index": 0,
+          "column_index": 20,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_channel_sales_rep",
+          "selector": "th:has-text('Nutanix Channel Sales Rep')",
+          "text": "Nutanix Channel Sales Rep",
+          "table_index": 0,
+          "column_index": 21,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_opportunity_se",
+          "selector": "th:has-text('Nutanix Opportunity SE')",
+          "text": "Nutanix Opportunity SE",
+          "table_index": 0,
+          "column_index": 22,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_channel_se",
+          "selector": "th:has-text('Nutanix Channel SE')",
+          "text": "Nutanix Channel SE",
+          "table_index": 0,
+          "column_index": 23,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_channel_segmentation",
+          "selector": "th:has-text('Channel Segmentation')",
+          "text": "Channel Segmentation",
+          "table_index": 0,
+          "column_index": 24,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_customer_contact",
+          "selector": "th:has-text('Customer Contact')",
+          "text": "Customer Contact",
+          "table_index": 0,
+          "column_index": 25,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_quote_id",
+          "selector": "th:has-text('Quote ID')",
+          "text": "Quote ID",
+          "table_index": 0,
+          "column_index": 26,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_primary_quote_status",
+          "selector": "th:has-text('Primary Quote Status')",
+          "text": "Primary Quote Status",
+          "table_index": 0,
+          "column_index": 27,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_reseller_contact",
+          "selector": "th:has-text('Reseller Contact')",
+          "text": "Reseller Contact",
+          "table_index": 0,
+          "column_index": 28,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_distributor_contact",
+          "selector": "th:has-text('Distributor Contact')",
+          "text": "Distributor Contact",
+          "table_index": 0,
+          "column_index": 29,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_sales_order",
+          "selector": "th:has-text('Sales Order')",
+          "text": "Sales Order",
+          "table_index": 0,
+          "column_index": 30,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_buyer_po",
+          "selector": "th:has-text('Buyer PO')",
+          "text": "Buyer PO",
+          "table_index": 0,
+          "column_index": 31,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_end_user_po",
+          "selector": "th:has-text('End User PO')",
+          "text": "End User PO",
+          "table_index": 0,
+          "column_index": 32,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
         }
       ],
       "active_apis": [
+        "POST /graphql",
         "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
-        "GET /api/v1/is-authenticated",
-        "POST /graphql"
+        "GET /api/v1/is-authenticated"
+      ],
+      "context": {
+        "persona": "Reseller"
+      }
+    },
+    {
+      "id": "sales_bookings_page",
+      "url": "http://localhost:9000/sales/data/bookings?subCategory=New+Logo",
+      "semantic_name": "sales_bookings_page",
+      "title": "Partner Central",
+      "display_header": "Sales Bookings Page",
+      "description": "The page is a \u201cSales Data \u2013 Bookings\u201d view filtered to the **New\u202fLogo** sub\u2011category, showing a list of opportunity records in a tabular format. Its primary function is to let a logged\u2011in reseller examine detailed booking information\u2014such as opportunity name, ID, customer, segment, type, stage, forecast category, product lineup, and associated reseller or distributor\u2014so they can track and manage their sales pipeline. Key sections include the top navigation bar (Partner Central, View\u202fAs, date selector), the page header with the \u201cSales Data\u201d label, and the main data table that presents each opportunity across the defined columns.",
+      "headers": [
+        "\u00a9 Nutanix 2026",
+        "Partner Central",
+        "View As",
+        "Sales Data",
+        "25 Jan 2026",
+        "06 Aug 2025",
+        "29 Jul 2025",
+        "06 Aug 2025"
+      ],
+      "primary_entity": "Graphql",
+      "components": [
+        {
+          "type": "button",
+          "role": "button_nutanix_p",
+          "selector": "button.ntnx-dropdown-trigger",
+          "text": "Nutanix P",
+          "stable_text": "Nutanix P",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_1",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_2",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_exit",
+          "selector": "button.ntnx-tooltip-toggle",
+          "text": "Exit",
+          "stable_text": "Exit",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_nutanix_fy26_q1",
+          "selector": "button.GlobalTimeSelector---currentSelectionButton---QIYAf",
+          "text": "Nutanix FY26 Q1",
+          "stable_text": "Nutanix FY26 Q1",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_5",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_view_analysis0",
+          "selector": "button.ntnx",
+          "text": "View Analysis\n0",
+          "stable_text": "View Analysis\n0",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_global_filters",
+          "selector": "button.ntnx",
+          "text": "Global Filters",
+          "stable_text": "Global Filters",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_8",
+          "selector": "button.FilterHeader---sizeButton---KVtAS",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_9",
+          "selector": "button.close-btn",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_15",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_18",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_19",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_bookings",
+          "selector": "button.ntnx-truncate",
+          "text": "Bookings (New Logo)",
+          "stable_text": "Bookings",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_21",
+          "selector": "button.ntnx",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_export",
+          "selector": "button.ntnx",
+          "text": "Export",
+          "stable_text": "Export",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_feedback",
+          "selector": "button.feedback-button",
+          "text": "Feedback",
+          "stable_text": "Feedback",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_53",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_button",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_62",
+          "selector": "button#close-pc-btn-handler",
+          "text": "",
+          "stable_text": "",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_filter_button",
+          "selector": "button#filter-btn-handler",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_clear",
+          "selector": "button#clear-filters-handler",
+          "text": "Clear",
+          "stable_text": "Clear",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_apply",
+          "selector": "button#filter-apply-handler",
+          "text": "Apply",
+          "stable_text": "Apply",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_cancel",
+          "selector": "button#filter-cancel-handler",
+          "text": "Cancel",
+          "stable_text": "Cancel",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated",
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "skeleton_of_a_table",
+          "selector": "table:nth-of-type(1)",
+          "item_count": 3,
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "pricing_list",
+          "selector": "ul:nth-of-type(2)",
+          "item_count": 3,
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(3)",
+          "item_count": 1,
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "pricing_list",
+          "selector": "ul:nth-of-type(4)",
+          "item_count": 2,
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "checkbox_list",
+          "selector": "ul:nth-of-type(5)",
+          "item_count": 1,
+          "triggers_api": [
+            "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+            "GET http://localhost:9000/api/v1/is-authenticated"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_name",
+          "selector": "th:has-text('Opportunity Name')",
+          "text": "Opportunity Name",
+          "table_index": 0,
+          "column_index": 0,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_id",
+          "selector": "th:has-text('Opportunity ID')",
+          "text": "Opportunity ID",
+          "table_index": 0,
+          "column_index": 1,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_customer_name",
+          "selector": "th:has-text('Customer Name')",
+          "text": "Customer Name",
+          "table_index": 0,
+          "column_index": 2,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_account_segment",
+          "selector": "th:has-text('Account Segment')",
+          "text": "Account Segment",
+          "table_index": 0,
+          "column_index": 3,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_type",
+          "selector": "th:has-text('Opportunity Type')",
+          "text": "Opportunity Type",
+          "table_index": 0,
+          "column_index": 4,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_opportunity_stage",
+          "selector": "th:has-text('Opportunity Stage')",
+          "text": "Opportunity Stage",
+          "table_index": 0,
+          "column_index": 5,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_forecast_category",
+          "selector": "th:has-text('Forecast Category')",
+          "text": "Forecast Category",
+          "table_index": 0,
+          "column_index": 6,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_products",
+          "selector": "th:has-text('Products')",
+          "text": "Products",
+          "table_index": 0,
+          "column_index": 7,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_reseller_name",
+          "selector": "th:has-text('Reseller Name')",
+          "text": "Reseller Name",
+          "table_index": 0,
+          "column_index": 8,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_distributor_name",
+          "selector": "th:has-text('Distributor Name')",
+          "text": "Distributor Name",
+          "table_index": 0,
+          "column_index": 9,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_id",
+          "selector": "th:has-text('Deal Reg ID')",
+          "text": "Deal Reg ID",
+          "table_index": 0,
+          "column_index": 10,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_expiry_date",
+          "selector": "th:has-text('Deal Reg Expiry Date')",
+          "text": "Deal Reg Expiry Date",
+          "table_index": 0,
+          "column_index": 11,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_deal_reg_status",
+          "selector": "th:has-text('Deal Reg Status')",
+          "text": "Deal Reg Status",
+          "table_index": 0,
+          "column_index": 12,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_close_date",
+          "selector": "th:has-text('Close Date')",
+          "text": "Close Date",
+          "table_index": 0,
+          "column_index": 13,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_open_date",
+          "selector": "th:has-text('Open Date')",
+          "text": "Open Date",
+          "table_index": 0,
+          "column_index": 14,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_last_modified_date",
+          "selector": "th:has-text('Last Modified Date')",
+          "text": "Last Modified Date",
+          "table_index": 0,
+          "column_index": 15,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_tcv",
+          "selector": "th:has-text('TCV')",
+          "text": "TCV",
+          "table_index": 0,
+          "column_index": 16,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_earned_incentives",
+          "selector": "th:has-text('Earned Incentives')",
+          "text": "Earned Incentives",
+          "table_index": 0,
+          "column_index": 17,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_estimated_incentives",
+          "selector": "th:has-text('Estimated Incentives')",
+          "text": "Estimated Incentives",
+          "table_index": 0,
+          "column_index": 18,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_account_owner",
+          "selector": "th:has-text('Nutanix Account Owner')",
+          "text": "Nutanix Account Owner",
+          "table_index": 0,
+          "column_index": 19,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_opportunity_sales_owner",
+          "selector": "th:has-text('Nutanix Opportunity Sales Owner')",
+          "text": "Nutanix Opportunity Sales Owner",
+          "table_index": 0,
+          "column_index": 20,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_channel_sales_rep",
+          "selector": "th:has-text('Nutanix Channel Sales Rep')",
+          "text": "Nutanix Channel Sales Rep",
+          "table_index": 0,
+          "column_index": 21,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_opportunity_se",
+          "selector": "th:has-text('Nutanix Opportunity SE')",
+          "text": "Nutanix Opportunity SE",
+          "table_index": 0,
+          "column_index": 22,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_nutanix_channel_se",
+          "selector": "th:has-text('Nutanix Channel SE')",
+          "text": "Nutanix Channel SE",
+          "table_index": 0,
+          "column_index": 23,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_channel_segmentation",
+          "selector": "th:has-text('Channel Segmentation')",
+          "text": "Channel Segmentation",
+          "table_index": 0,
+          "column_index": 24,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_customer_contact",
+          "selector": "th:has-text('Customer Contact')",
+          "text": "Customer Contact",
+          "table_index": 0,
+          "column_index": 25,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_quote_id",
+          "selector": "th:has-text('Quote ID')",
+          "text": "Quote ID",
+          "table_index": 0,
+          "column_index": 26,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_primary_quote_status",
+          "selector": "th:has-text('Primary Quote Status')",
+          "text": "Primary Quote Status",
+          "table_index": 0,
+          "column_index": 27,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_reseller_contact",
+          "selector": "th:has-text('Reseller Contact')",
+          "text": "Reseller Contact",
+          "table_index": 0,
+          "column_index": 28,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_distributor_contact",
+          "selector": "th:has-text('Distributor Contact')",
+          "text": "Distributor Contact",
+          "table_index": 0,
+          "column_index": 29,
+          "is_sortable": true,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_sales_order",
+          "selector": "th:has-text('Sales Order')",
+          "text": "Sales Order",
+          "table_index": 0,
+          "column_index": 30,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_buyer_po",
+          "selector": "th:has-text('Buyer PO')",
+          "text": "Buyer PO",
+          "table_index": 0,
+          "column_index": 31,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        },
+        {
+          "type": "table_column",
+          "role": "column_end_user_po",
+          "selector": "th:has-text('End User PO')",
+          "text": "End User PO",
+          "table_index": 0,
+          "column_index": 32,
+          "is_sortable": false,
+          "aria_label": "",
+          "title": "",
+          "triggers_api": []
+        }
+      ],
+      "active_apis": [
+        "POST /graphql",
+        "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
+        "GET /api/v1/is-authenticated"
       ],
       "context": {
         "persona": "Reseller"
@@ -861,7 +2232,7 @@
       "semantic_name": "renewals_bookings",
       "title": "Partner Central",
       "display_header": "Renewals Bookings",
-      "description": "The page is a \u201cRenewals Data\u201d view within Partner Central that lists booking information in a table format, showing each renewal opportunity as a separate row. Its primary function is to let a reseller review and manage renewal bookings, with navigation elements such as the \u201cView As\u201d selector and the overall Partner Central header. The main visible sections are the page header (including the Nutanix copyright and navigation) and the data table, which currently indicates that no opportunities are present.",
+      "description": "The page presents the **Renewals Data \u2013 Bookings** view within Partner Central, displaying a table that lists renewal\u2011related booking opportunities (currently showing no results). Its primary function is to let partners review and manage renewal bookings tied to their accounts. The layout includes the standard Partner Central header with navigation controls (e.g., \u201cView As\u201d) and a central table area where opportunity details would appear, along with the site footer.",
       "headers": [
         "\u00a9 Nutanix 2026",
         "Partner Central",
@@ -1070,43 +2441,10 @@
         },
         {
           "type": "button",
-          "role": "button_allow_all",
-          "selector": "button#accept-recommended-btn-handler",
-          "text": "Allow All",
-          "stable_text": "Allow All",
-          "triggers_api": [
-            "POST http://localhost:9000/graphql"
-          ],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_26",
-          "selector": "button:nth-of-type(27)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [
-            "POST http://localhost:9000/graphql"
-          ],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_27",
-          "selector": "button:nth-of-type(28)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [
-            "POST http://localhost:9000/graphql"
-          ],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
           "triggers_api": [
             "POST http://localhost:9000/graphql"
           ],
@@ -1147,7 +2485,18 @@
         },
         {
           "type": "button",
-          "role": "button_34",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
+          "type": "button",
+          "role": "button_33",
           "selector": "button#close-pc-btn-handler",
           "text": "",
           "stable_text": "",
@@ -1158,32 +2507,10 @@
         },
         {
           "type": "button",
-          "role": "button_allow_all",
-          "selector": "button#accept-recommended-btn-handler",
-          "text": "Allow All",
-          "stable_text": "Allow All",
-          "triggers_api": [
-            "POST http://localhost:9000/graphql"
-          ],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_36",
-          "selector": "button:nth-of-type(37)",
-          "text": "",
-          "stable_text": "",
-          "triggers_api": [
-            "POST http://localhost:9000/graphql"
-          ],
-          "impacts_db": null
-        },
-        {
-          "type": "button",
-          "role": "button_filter_icon",
+          "role": "button_filter_button",
           "selector": "button#filter-btn-handler",
-          "text": "Filter Icon",
-          "stable_text": "Filter Icon",
+          "text": "Filter Button",
+          "stable_text": "Filter Button",
           "triggers_api": [
             "POST http://localhost:9000/graphql"
           ],
@@ -1223,8 +2550,19 @@
           "impacts_db": null
         },
         {
+          "type": "button",
+          "role": "button_allow_all",
+          "selector": "button#accept-recommended-btn-handler",
+          "text": "Allow All",
+          "stable_text": "Allow All",
+          "triggers_api": [
+            "POST http://localhost:9000/graphql"
+          ],
+          "impacts_db": null
+        },
+        {
           "type": "list",
-          "role": "what_the_list",
+          "role": "skeleton_of_a_table",
           "selector": "table:nth-of-type(1)",
           "item_count": 3,
           "triggers_api": [],
@@ -1232,16 +2570,32 @@
         },
         {
           "type": "list",
-          "role": "checkbox_list",
+          "role": "pricing_list",
           "selector": "ul:nth-of-type(2)",
+          "item_count": 3,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
+          "role": "category_filter_list",
+          "selector": "ul:nth-of-type(3)",
           "item_count": 1,
           "triggers_api": [],
           "impacts_db": null
         },
         {
           "type": "list",
+          "role": "pricing_list",
+          "selector": "ul:nth-of-type(4)",
+          "item_count": 2,
+          "triggers_api": [],
+          "impacts_db": null
+        },
+        {
+          "type": "list",
           "role": "checkbox_list",
-          "selector": "ul:nth-of-type(3)",
+          "selector": "ul:nth-of-type(5)",
           "item_count": 1,
           "triggers_api": [],
           "impacts_db": null
@@ -1354,6 +2708,59 @@
       "link_text": "$2.13M"
     },
     {
+      "from": "sales_bookings_page",
+      "to": "external_www_nutanix_com_d9a2d2a1",
+      "action": "navigate",
+      "link_text": "Terms of Use",
+      "href": "https://www.nutanix.com/legal/terms-of-use",
+      "is_external": true,
+      "description": "External link: Terms of Use"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "external_www_nutanix_com_07d48e5f",
+      "action": "navigate",
+      "link_text": "Privacy Statement",
+      "href": "https://www.nutanix.com/legal/privacy-statement",
+      "is_external": true,
+      "description": "External link: Privacy Statement"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "external_www_nutanix_com_db4ca244",
+      "action": "navigate",
+      "link_text": "Do Not Sell or Share My Personal Information",
+      "href": "https://www.nutanix.com/legal/do-not-sell-my-personal-information",
+      "is_external": true,
+      "description": "External link: Do Not Sell or Share My Personal Information"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "external_cookiepedia_co_uk_935e7716",
+      "action": "navigate",
+      "link_text": "More information",
+      "href": "https://cookiepedia.co.uk/giving-consent-to-cookies",
+      "is_external": true,
+      "description": "External link: More information"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "external_www_onetrust_com_a6501b89",
+      "action": "navigate",
+      "link_text": "",
+      "href": "https://www.onetrust.com/products/cookie-consent/",
+      "is_external": true,
+      "description": "External link: https://www.onetrust.com/products/cookie-consent/"
+    },
+    {
+      "from": "partner_dashboard",
+      "to": "sales_bookings_page",
+      "action": "navigate",
+      "selector": "a#legend-link-New Logo",
+      "link_text": "$156.72K (1)",
+      "link_id": "legend-link-New Logo"
+    },
+    {
       "from": "renewals_bookings",
       "to": "external_www_nutanix_com_d9a2d2a1",
       "action": "navigate",
@@ -1408,6 +2815,26 @@
     },
     {
       "from": "sales_bookings",
+      "to": "sales_bookings_page",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings",
+      "to": "sales_bookings_page",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings",
       "to": "renewals_bookings",
       "action": "click",
       "selector": "button.ntnx-dropdown-trigger",
@@ -1419,6 +2846,66 @@
     {
       "from": "sales_bookings",
       "to": "renewals_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "renewals_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "renewals_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "sales_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "sales_bookings_page",
+      "to": "sales_bookings",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "renewals_bookings",
+      "to": "sales_bookings_page",
+      "action": "click",
+      "selector": "button.ntnx-dropdown-trigger",
+      "link_text": "Nutanix P",
+      "is_external": false,
+      "component_role": "button_nutanix_p",
+      "inferred_from": "component_triggers_api"
+    },
+    {
+      "from": "renewals_bookings",
+      "to": "sales_bookings_page",
       "action": "click",
       "selector": "button.ntnx-dropdown-trigger",
       "link_text": "Nutanix P",
@@ -1448,6 +2935,15 @@
     }
   ],
   "api_endpoints": {
+    "POST /graphql": {
+      "method": "POST",
+      "endpoint": "/graphql",
+      "nodes": [
+        "sales_bookings",
+        "sales_bookings_page",
+        "renewals_bookings"
+      ]
+    },
     "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026": {
       "method": "GET",
       "endpoint": "/api/v1/opportunity?category=Bookings&subCategories=New+Logo&subCategories=Expansion&subCategories=Others&quarter=2-2026",
@@ -1459,22 +2955,15 @@
       "method": "GET",
       "endpoint": "/api/v1/is-authenticated",
       "nodes": [
-        "sales_bookings"
-      ]
-    },
-    "POST /graphql": {
-      "method": "POST",
-      "endpoint": "/graphql",
-      "nodes": [
         "sales_bookings",
-        "renewals_bookings"
+        "sales_bookings_page"
       ]
     },
     "GET /api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026": {
       "method": "GET",
       "endpoint": "/api/v1/opportunity?category=Bookings&subCategories=New+Logo&quarter=2-2026",
       "nodes": [
-        "sales_bookings"
+        "sales_bookings_page"
       ]
     },
     "GET /api/v1/opportunity?category=Bookings&subCategories=Expansion&quarter=2-2026": {

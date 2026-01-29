@@ -262,6 +262,33 @@
   padding: 0;
 }
 
+.pdp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdp-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.pdp-fullscreen-btn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #4f46e5;
+}
+
 /* Configuration */
 .pdp-config-grid {
   display: grid;

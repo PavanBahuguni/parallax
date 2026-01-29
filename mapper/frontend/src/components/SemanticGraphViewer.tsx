@@ -19,6 +19,15 @@ import 'reactflow/dist/style.css'
 import dagre from 'dagre'
 import './SemanticGraphViewer.css'
 
+interface RelatedTest {
+  test_id: string
+  task_id?: string
+  description?: string
+  persona?: string
+  added_at?: string
+  status?: string
+}
+
 interface GraphNode {
   id: string
   url: string
@@ -32,6 +41,7 @@ interface GraphNode {
   active_apis?: string[]
   is_external?: boolean
   domain?: string
+  related_tests?: RelatedTest[]
 }
 
 interface GraphEdge {
@@ -61,6 +71,8 @@ interface SemanticGraphViewerProps {
 // Custom Node Component
 function CustomNode({ data }: { data: any }) {
   const { label, nodeColor } = data
+  const relatedTests: RelatedTest[] = data.related_tests || []
+  const hasTests = relatedTests.length > 0
 
   const tooltipSections: string[] = []
   
@@ -89,15 +101,15 @@ function CustomNode({ data }: { data: any }) {
   return (
     <div className="custom-node-wrapper">
       <div
-        className={`custom-node ${data.is_external ? 'external-node' : ''}`}
+        className={`custom-node ${data.is_external ? 'external-node' : ''} ${hasTests ? 'has-tests' : ''}`}
         style={{
           background: nodeColor,
-          border: data.is_external ? '2px dashed #95a5a6' : '2px solid #2c3e50',
+          border: data.is_external ? '2px dashed #95a5a6' : hasTests ? '2px solid #f39c12' : '2px solid #2c3e50',
           borderRadius: '8px',
           padding: '12px 16px',
           minWidth: '120px',
           maxWidth: '220px',
-          boxShadow: data.is_external ? '0 2px 8px rgba(149, 165, 166, 0.2)' : '0 4px 12px rgba(0, 0, 0, 0.15)',
+          boxShadow: data.is_external ? '0 2px 8px rgba(149, 165, 166, 0.2)' : hasTests ? '0 4px 12px rgba(243, 156, 18, 0.35)' : '0 4px 12px rgba(0, 0, 0, 0.15)',
           transition: 'all 0.2s ease',
           position: 'relative',
           opacity: data.is_external ? 0.85 : 1,
@@ -121,6 +133,11 @@ function CustomNode({ data }: { data: any }) {
         >
           {label}
         </div>
+        {hasTests && (
+          <div className="test-badge" title={`${relatedTests.length} test(s) linked`}>
+            🧪 {relatedTests.length}
+          </div>
+        )}
         <Handle
           type="source"
           position={Position.Bottom}
@@ -131,6 +148,22 @@ function CustomNode({ data }: { data: any }) {
         {tooltipSections.map((section, idx) => (
           <div key={idx} className="tooltip-line">{section}</div>
         ))}
+        {hasTests && (
+          <div className="tooltip-tests-section">
+            <div className="tooltip-tests-header">🧪 Related Tests ({relatedTests.length})</div>
+            {relatedTests.map((test, idx) => (
+              <div key={idx} className="tooltip-test-item">
+                <div className="test-id">{test.test_id}</div>
+                {test.persona && <span className="test-persona">{test.persona}</span>}
+                {test.description && (
+                  <div className="test-description">
+                    {test.description.length > 80 ? test.description.substring(0, 80) + '...' : test.description}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

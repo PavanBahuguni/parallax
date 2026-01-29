@@ -26,7 +26,7 @@ from .schemas import (
 )
 from .agent_orchestrator import AgentOrchestrator
 from .database import get_db, init_db
-from .models import Project, Task, ProjectConfig
+from .models import Project, Task, ProjectConfig, TestCluster, SelectorCorrection
 
 # Configure logging
 logging.basicConfig(
@@ -1259,12 +1259,382 @@ async def get_semantic_graph(
         
         logger.info(f"Loading semantic graph from: {graph_file}")
         graph_data = json.loads(graph_file.read_text())
+        
+        # Enrich nodes with related tests from database
+        try:
+            # Get all test clusters for this project (or all if no project specified)
+            query = select(TestCluster).where(TestCluster.status == "active")
+            if project_id:
+                from uuid import UUID
+                query = query.where(TestCluster.project_id == UUID(project_id))
+            
+            result = await db.execute(query)
+            test_clusters = result.scalars().all()
+            
+            # Group tests by target_node and persona
+            tests_by_node: Dict[str, List[Dict]] = {}
+            for tc in test_clusters:
+                node_id = tc.target_node
+                if node_id not in tests_by_node:
+                    tests_by_node[node_id] = []
+                tests_by_node[node_id].append({
+                    "test_id": tc.test_case_id,
+                    "task_id": str(tc.task_id) if tc.task_id else None,
+                    "description": tc.purpose,
+                    "persona": tc.extra_data.get("persona", "") if tc.extra_data else "",
+                    "cluster_name": tc.cluster_name,
+                    "status": tc.status,
+                    "created_at": tc.created_at.isoformat() if tc.created_at else None
+                })
+            
+            # Add related_tests to matching nodes, filtering by persona if specified
+            for node in graph_data.get("nodes", []):
+                node_id = node.get("id", "")
+                if node_id in tests_by_node:
+                    # Filter tests by persona if we have a persona context
+                    tests_for_node = tests_by_node[node_id]
+                    if persona:
+                        # Only show tests for this persona
+                        tests_for_node = [
+                            t for t in tests_for_node 
+                            if not t.get("persona") or t.get("persona", "").lower() == persona.lower()
+                        ]
+                    node["related_tests"] = tests_for_node
+                    
+            logger.info(f"Enriched graph with {len(tests_by_node)} nodes having related tests")
+        except Exception as e:
+            logger.warning(f"Could not enrich graph with related tests: {e}")
+        
         return graph_data
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error reading semantic graph: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# TEST CLUSTERS ENDPOINTS
+# ============================================================================
+
+@app.get("/api/clusters")
+async def get_test_clusters(
+    project_id: Optional[str] = None,
+    node_id: Optional[str] = None,
+    persona: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all test clusters, optionally filtered by project, node, or persona."""
+    try:
+        query = select(TestCluster).where(TestCluster.status == "active")
+        
+        if project_id:
+            query = query.where(TestCluster.project_id == UUID(project_id))
+        if node_id:
+            query = query.where(TestCluster.target_node == node_id)
+        
+        result = await db.execute(query)
+        clusters = result.scalars().all()
+        
+        # Filter by persona if specified
+        if persona:
+            clusters = [
+                c for c in clusters 
+                if c.extra_data and c.extra_data.get("persona", "").lower() == persona.lower()
+            ]
+        
+        return [c.to_dict() for c in clusters]
+    except Exception as e:
+        logger.error(f"Error fetching test clusters: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/clusters/{node_id}/tests")
+async def get_tests_for_node(
+    node_id: str,
+    project_id: Optional[str] = None,
+    persona: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all tests linked to a specific graph node (for impact analysis)."""
+    try:
+        query = select(TestCluster).where(
+            TestCluster.target_node == node_id,
+            TestCluster.status == "active"
+        )
+        
+        if project_id:
+            query = query.where(TestCluster.project_id == UUID(project_id))
+        
+        result = await db.execute(query)
+        clusters = result.scalars().all()
+        
+        # Filter by persona if specified
+        if persona:
+            clusters = [
+                c for c in clusters 
+                if c.extra_data and c.extra_data.get("persona", "").lower() == persona.lower()
+            ]
+        
+        return {
+            "node_id": node_id,
+            "test_count": len(clusters),
+            "tests": [c.to_dict() for c in clusters]
+        }
+    except Exception as e:
+        logger.error(f"Error fetching tests for node {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/clusters")
+async def create_test_cluster(
+    cluster_data: Dict[str, Any],
+    db: AsyncSession = Depends(get_db)
+):
+    """Register a new test case in a cluster."""
+    try:
+        # Get project_id - use provided one or fall back to first available project
+        project_id = None
+        if cluster_data.get("project_id"):
+            try:
+                project_id = UUID(cluster_data["project_id"])
+            except (ValueError, TypeError):
+                pass
+        
+        if not project_id:
+            # Fall back to first project in database
+            result = await db.execute(select(Project).limit(1))
+            first_project = result.scalar_one_or_none()
+            if first_project:
+                project_id = first_project.id
+                logger.info(f"Using default project: {project_id}")
+            else:
+                raise HTTPException(status_code=400, detail="No project available. Create a project first.")
+        
+        # Check for duplicate test case
+        existing_query = select(TestCluster).where(
+            TestCluster.project_id == project_id,
+            TestCluster.test_case_id == cluster_data["test_case_id"],
+            TestCluster.target_node == cluster_data["target_node"]
+        )
+        existing_result = await db.execute(existing_query)
+        existing_cluster = existing_result.scalar_one_or_none()
+        
+        if existing_cluster:
+            # Update existing cluster with new task reference and metadata
+            task_id_str = cluster_data.get("task_id")
+            if task_id_str and task_id_str != "None":
+                # Add/update task reference in extra_data
+                extra_data = existing_cluster.extra_data or {}
+                existing_task_name = extra_data.get("task_name")
+                
+                # Track all tasks that have run this test
+                task_history = extra_data.get("task_history", [])
+                if existing_task_name and existing_task_name not in task_history:
+                    task_history.append(existing_task_name)
+                if task_id_str not in task_history:
+                    task_history.append(task_id_str)
+                
+                extra_data["task_name"] = task_id_str
+                extra_data["task_history"] = task_history
+                existing_cluster.extra_data = extra_data
+                
+                # Update purpose if provided
+                if cluster_data.get("purpose"):
+                    existing_cluster.purpose = cluster_data["purpose"]
+                
+                await db.commit()
+                await db.refresh(existing_cluster)
+                logger.info(f"Updated test cluster: {cluster_data['test_case_id']} with task '{task_id_str}'")
+            else:
+                logger.info(f"Test cluster already exists: {cluster_data['test_case_id']}")
+            return existing_cluster.to_dict()
+        
+        # Handle task_id: it might be a UUID or a string like "TASK-4"
+        # Only convert to UUID if it's a valid UUID format
+        task_id_uuid = None
+        task_id_str = cluster_data.get("task_id")
+        if task_id_str and task_id_str != "None":
+            try:
+                task_id_uuid = UUID(task_id_str)
+            except (ValueError, TypeError):
+                # Not a valid UUID (e.g., "TASK-4"), store as string in extra_data
+                logger.info(f"task_id '{task_id_str}' is not a UUID, storing in extra_data")
+        
+        cluster = TestCluster(
+            project_id=project_id,
+            task_id=task_id_uuid,
+            cluster_name=cluster_data.get("cluster_name", cluster_data.get("target_node", "")),
+            test_case_id=cluster_data["test_case_id"],
+            target_node=cluster_data["target_node"],
+            purpose=cluster_data.get("purpose", ""),
+            mission_file=cluster_data.get("mission_file"),
+            status="active",
+            extra_data={
+                "persona": cluster_data.get("persona", ""),
+                "verification": cluster_data.get("verification", {}),
+                "task_name": task_id_str if task_id_str and not task_id_uuid else None,  # Store string task ID
+            }
+        )
+        
+        db.add(cluster)
+        await db.commit()
+        await db.refresh(cluster)
+        
+        logger.info(f"Created test cluster: {cluster.test_case_id} for node {cluster.target_node}")
+        return cluster.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error creating test cluster: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# TEST REPOSITORY ENDPOINTS
+# ============================================================================
+
+@app.get("/api/repository")
+async def list_test_repositories():
+    """List all test repository files with summary info."""
+    try:
+        import sys
+        mapper_dir = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(mapper_dir))
+        from test_repository_manager import TestRepositoryManager
+        
+        manager = TestRepositoryManager(mapper_dir=mapper_dir)
+        repositories = manager.list_repositories()
+        
+        return {
+            "success": True,
+            "repositories": repositories,
+            "total": len(repositories)
+        }
+    except Exception as e:
+        logger.error(f"Error listing repositories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/repository/{node_id}")
+async def get_test_repository(node_id: str):
+    """Get all tests for a specific node from the repository."""
+    try:
+        import sys
+        mapper_dir = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(mapper_dir))
+        from test_repository_manager import TestRepositoryManager
+        
+        manager = TestRepositoryManager(mapper_dir=mapper_dir)
+        repo_data = manager.load_repository(node_id)
+        
+        return {
+            "success": True,
+            "node_id": node_id,
+            "tests": repo_data.get("tests", []),
+            "last_updated": repo_data.get("last_updated"),
+            "test_count": len(repo_data.get("tests", []))
+        }
+    except Exception as e:
+        logger.error(f"Error loading repository for node {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/repository/{node_id}/tests/{test_id}")
+async def get_test_from_repository(node_id: str, test_id: str):
+    """Get a specific test from the repository."""
+    try:
+        import sys
+        mapper_dir = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(mapper_dir))
+        from test_repository_manager import TestRepositoryManager
+        
+        manager = TestRepositoryManager(mapper_dir=mapper_dir)
+        test = manager.get_test(node_id, test_id)
+        
+        if not test:
+            raise HTTPException(status_code=404, detail=f"Test '{test_id}' not found in node '{node_id}'")
+        
+        return {
+            "success": True,
+            "test": test
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting test {test_id} from node {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/repository/{node_id}/tests/{test_id}")
+async def update_test_in_repository(
+    node_id: str, 
+    test_id: str, 
+    update_data: Dict[str, Any]
+):
+    """Update a test in the repository (e.g., change status to deprecated)."""
+    try:
+        import sys
+        mapper_dir = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(mapper_dir))
+        from test_repository_manager import TestRepositoryManager
+        
+        manager = TestRepositoryManager(mapper_dir=mapper_dir)
+        
+        # Get current test
+        test = manager.get_test(node_id, test_id)
+        if not test:
+            raise HTTPException(status_code=404, detail=f"Test '{test_id}' not found in node '{node_id}'")
+        
+        # Update status if provided
+        if "status" in update_data:
+            success = manager.update_test_status(
+                node_id=node_id,
+                test_id=test_id,
+                status=update_data["status"],
+                reason=update_data.get("reason")
+            )
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to update test status")
+        
+        # Reload and return updated test
+        updated_test = manager.get_test(node_id, test_id)
+        
+        return {
+            "success": True,
+            "test": updated_test
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating test {test_id} in node {node_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/repository/{node_id}/sync")
+async def sync_repository_to_database(
+    node_id: str,
+    project_id: Optional[str] = None
+):
+    """Sync a repository file to the database for graph enrichment."""
+    try:
+        import sys
+        mapper_dir = Path(__file__).parent.parent.parent
+        sys.path.insert(0, str(mapper_dir))
+        from test_repository_manager import TestRepositoryManager
+        
+        manager = TestRepositoryManager(project_id=project_id, mapper_dir=mapper_dir)
+        result = manager.sync_to_database(node_id)
+        
+        return {
+            "success": result.get("success", False),
+            "synced": result.get("synced", 0),
+            "errors": result.get("errors", [])
+        }
+    except Exception as e:
+        logger.error(f"Error syncing repository {node_id} to database: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

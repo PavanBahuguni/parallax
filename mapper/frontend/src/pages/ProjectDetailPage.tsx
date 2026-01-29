@@ -368,24 +368,31 @@ function ProjectDetailPage() {
             <section className="pdp-card">
               <div className="pdp-card-header">
                 <h2 className="pdp-card-title">Semantic Graph</h2>
-                {project.personas && project.personas.length > 1 && (
-                  <div className="pdp-select-wrapper">
-                    <select
-                      value={selectedPersona || ''}
-                      onChange={(e) => setSelectedPersona(e.target.value || null)}
-                      className="pdp-select"
-                    >
-                      {project.personas.map((persona: any) => {
-                        const personaName = typeof persona === 'string' ? persona : persona.name || persona
-                        return (
-                          <option key={personaName} value={personaName}>
-                            {personaName}
-                          </option>
-                        )
-                      })}
-                    </select>
-                  </div>
-                )}
+                <div className="pdp-header-actions">
+                  {project.personas && project.personas.length > 1 && (
+                    <div className="pdp-select-wrapper">
+                      <select
+                        value={selectedPersona || ''}
+                        onChange={(e) => setSelectedPersona(e.target.value || null)}
+                        className="pdp-select"
+                      >
+                        {project.personas.map((persona: any) => {
+                          const personaName = typeof persona === 'string' ? persona : persona.name || persona
+                          return (
+                            <option key={personaName} value={personaName}>
+                              {personaName}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    </div>
+                  )}
+                  {graph && graph.nodes && graph.nodes.length > 0 && (
+                    <Link to={`/projects/${projectId}/graph`} className="pdp-fullscreen-btn">
+                      ⛶ Full Screen
+                    </Link>
+                  )}
+                </div>
               </div>
               <div className="pdp-card-body pdp-graph-container">
                 {graph && graph.nodes && graph.nodes.length > 0 ? (

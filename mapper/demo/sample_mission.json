@@ -1,0 +1,177 @@
+{
+  "ticket_id": "PPT-20",
+  "title": "Verify TCV Column Display for Persona-Specific Visibility",
+  "description": "Verify that the TCV (Total Contract Value) column displays the correct value based on user role: Resellers see tcvAmountUplifted (and tcvAmount is hidden), while Distributors see tcvAmount directly.",
+  "target_node": "new_logo_bookings",
+  "target_url": "http://localhost:9000/sales/data/bookings?subCategory=New+Logo",
+  "execution_mode": "deterministic",
+  "personas": ["Reseller", "Distributor"],
+  
+  "intent": {
+    "primary_entity": "Opportunity",
+    "changes": [
+      "Added TCV column to the Opportunity detailed view page",
+      "Implemented conditional display logic: show tcvAmountUplifted for Resellers and hide tcvAmount",
+      "Implemented conditional display logic: show tcvAmount for Distributors"
+    ],
+    "test_focus": "Verify that the TCV column displays the correct value based on user role – Resellers see only tcvAmountUplifted and cannot see tcvAmount, while Distributors see tcvAmount. Ensure the displayed values match the corresponding database fields.",
+    "personas": ["Reseller", "Distributor"]
+  },
+  
+  "pr_link": "https://github.com/nutanix-saas-engineering/partner-app/pull/948",
+  
+  "pr_ui_changes": [
+    {
+      "filename": "ui/src/app/containers/SalesPage/SalesDataPage/SalesDataOpportunities/SalesDataOpportunities.config.tsx",
+      "elements": ["<TableCellWithTruncate id=\"tcv-amount\">"]
+    }
+  ],
+  
+  "test_scope": {
+    "test_db": true,
+    "test_api": true,
+    "test_ui": true,
+    "reasoning": "PR adds new column that requires DB field, API response, and UI display verification"
+  },
+  
+  "persona_tests": [
+    {
+      "persona": "Reseller",
+      "gateway_plan": {
+        "persona": "Reseller",
+        "goal": "Log in through Nutanix SSO, select the CDW partner view and contact, and verify landing on Partner Central",
+        "steps": [
+          {"action": "click", "selector": "button:has-text('Log In With My Nutanix')"},
+          {"action": "assert_url_contains", "text": "stage-my.nutanix.com"},
+          {"action": "fill", "selector": "input[placeholder='Username']", "value": "env(LOGIN_USERNAME)"},
+          {"action": "click", "selector": "button:has-text('Continue')"},
+          {"action": "wait_visible", "selector": ":has-text('password')"},
+          {"action": "fill", "selector": "input[placeholder='Password']", "value": "env(LOGIN_PASSWORD)"},
+          {"action": "click", "selector": "button:has-text('Login')"},
+          {"action": "assert_url_contains", "text": "localhost:9000"},
+          {"action": "wait_visible", "selector": ":has-text('Partner Central')"},
+          {"action": "fill", "selector": ".view-as-partner-input", "value": "CDW"},
+          {"action": "click", "selector": ".view-as-partner-popup div:has-text('CDW')", "exact_match": true},
+          {"action": "click", "selector": ".view-as-select-contact-popup div:has-text('Aaron Ferraro')"},
+          {"action": "assert_url_contains", "text": "localhost:9000"}
+        ]
+      },
+      "navigation_path": [
+        {"action": "goto", "url": "http://localhost:9000/"},
+        {"action": "click", "selector": "a#legend-link-New Logo", "target_node": "new_logo_bookings", "link_text": "$15.56K (1)"},
+        {"action": "wait_visible", "selector": "text=Partner Central", "description": "Wait for page load"}
+      ],
+      "test_cases": [
+        {
+          "id": "verify_tcv_reseller_visibility",
+          "purpose": "Ensure that Reseller users see the TCV column displaying tcvAmountUplifted and that tcvAmount is not exposed in the API response.",
+          "action_type": "verify",
+          "steps": [
+            "Log in as a Reseller user.",
+            "Verify that the TCV column is visible.",
+            "Capture the API response.",
+            "Verify that the TCV column displays the value from tcvAmountUplifted in the API response.",
+            "Verify that tcvAmount is NOT in the API response."
+          ],
+          "verification": {
+            "ui": ["TCV column is visible", "TCV column displays API value", "tcvAmount is not in API response"],
+            "api_field_mapping": {"TCV": "tcvAmountUplifted"},
+            "hidden_api_fields": ["tcvAmount"]
+          },
+          "component_selector": "th:has-text('TCV')",
+          "component_role": "column_tcv"
+        }
+      ]
+    },
+    {
+      "persona": "Distributor",
+      "gateway_plan": {
+        "persona": "Distributor",
+        "goal": "Log in via My Nutanix SSO, select the Adistec partner view and contact role",
+        "steps": [
+          {"action": "click", "selector": "button:has-text('Log In With My Nutanix')"},
+          {"action": "assert_url_contains", "text": "stage-my.nutanix.com"},
+          {"action": "fill", "selector": "input[name='username']", "value": "env(LOGIN_USERNAME)"},
+          {"action": "click", "selector": "button:has-text('Continue')"},
+          {"action": "wait_visible", "selector": "input[type='password']"},
+          {"action": "fill", "selector": "input[name='password']", "value": "env(LOGIN_PASSWORD)"},
+          {"action": "click", "selector": "button:has-text('Log In')"},
+          {"action": "assert_url_contains", "text": "localhost:9000"},
+          {"action": "wait_visible", "selector": ":has-text('Partner Central')"},
+          {"action": "fill", "selector": ".view-as-partner-input", "value": "Adistec"},
+          {"action": "click", "selector": ".view-as-partner-popup div:has-text('Adistec')", "exact_match": true},
+          {"action": "click", "selector": ".view-as-select-contact-popup div:has-text('Vendor Manager')"},
+          {"action": "assert_url_contains", "text": "localhost:9000"}
+        ]
+      },
+      "navigation_path": [
+        {"action": "goto", "url": "http://localhost:9000/"},
+        {"action": "click", "selector": "a#legend-link-New Logo", "target_node": "new_logo_bookings", "link_text": "$15.56K (1)"},
+        {"action": "wait_visible", "selector": "text=Partner Central", "description": "Wait for page load"}
+      ],
+      "test_cases": [
+        {
+          "id": "verify_tcv_distributor_visibility",
+          "purpose": "Ensure that Distributor users see the TCV column displaying tcvAmount.",
+          "action_type": "verify",
+          "steps": [
+            "Log in as a Distributor user.",
+            "Verify that the TCV column is visible.",
+            "Capture the API response.",
+            "Verify that the TCV column displays the value from tcvAmount in the API response."
+          ],
+          "verification": {
+            "ui": ["TCV column is visible", "TCV column displays API value"],
+            "api_field_mapping": {"TCV": "tcvAmount"},
+            "hidden_api_fields": []
+          },
+          "component_selector": "th:has-text('TCV')",
+          "component_role": "column_tcv"
+        }
+      ]
+    }
+  ],
+  
+  "api_verification": {
+    "inline": true,
+    "capture_during": true,
+    "endpoints": [
+      {
+        "method": "GET",
+        "url": "/api/v1/opportunity",
+        "expected_fields": ["tcvAmountUplifted", "tcvAmount"],
+        "verify_after_navigation": true
+      }
+    ]
+  },
+  
+  "db_verification": {
+    "enabled": true,
+    "db_table": "opportunity",
+    "db_schema": "partner_ssot",
+    "db_columns": ["tcv_amount", "tcv_amount_uplifted"],
+    "column_to_api_field": {
+      "tcv_amount": "tcvAmount",
+      "tcv_amount_uplifted": "tcvAmountUplifted"
+    },
+    "verification_queries": [
+      {
+        "api_field": "tcvAmountUplifted",
+        "db_column": "tcv_amount_uplifted",
+        "db_table": "opportunity",
+        "db_schema": "partner_ssot",
+        "query_template": "SELECT tcv_amount_uplifted FROM partner_ssot.opportunity WHERE id = $1",
+        "description": "Verify tcvAmountUplifted from API matches tcv_amount_uplifted in DB"
+      },
+      {
+        "api_field": "tcvAmount",
+        "db_column": "tcv_amount",
+        "db_table": "opportunity",
+        "db_schema": "partner_ssot",
+        "query_template": "SELECT tcv_amount FROM partner_ssot.opportunity WHERE id = $1",
+        "description": "Verify tcvAmount from API matches tcv_amount in DB"
+      }
+    ],
+    "connection_env_var": "PROJECT_DATABASE_URL"
+  }
+}

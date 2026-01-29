@@ -28,6 +28,9 @@ from browser_agent import BrowserAgent
 # Import gateway execution from semantic mapper (has agentic fallbacks)
 from semantic_mapper_with_gateway import execute_gateway_plan as mapper_execute_gateway_plan
 
+# Import selector learner for JIT correction tracking
+from selector_learner import SelectorLearner, SelectorCorrection
+
 # Force unbuffered output for real-time logging in subprocess
 console = Console(force_terminal=True)
 
@@ -68,6 +71,46 @@ def json_serialize(obj: Any) -> Any:
         return tuple(json_serialize(item) for item in obj)
     else:
         return obj
+
+
+def fix_selector_with_space_in_id(selector: str) -> str:
+    """Fix CSS selectors that have IDs with spaces.
+    
+    HTML IDs can technically contain spaces (though not recommended), but CSS 
+    selectors like `a#legend-link-New Logo` are invalid because the space is 
+    interpreted as a descendant combinator.
+    
+    This function converts:
+        `a#legend-link-New Logo` -> `a[id="legend-link-New Logo"]`
+        `#my-id with space` -> `[id="my-id with space"]`
+    
+    Args:
+        selector: CSS selector string that may contain invalid ID syntax
+        
+    Returns:
+        Fixed selector using attribute syntax for IDs with spaces
+    """
+    if not selector or '#' not in selector:
+        return selector
+    
+    # Pattern to match ID selectors: optional element, #, then ID (may contain space)
+    # Examples: a#legend-link-New Logo, #my-id with space, div#some-id
+    id_pattern = re.compile(r'^([a-zA-Z]*)(#)([^#\[\]]+)$')
+    
+    match = id_pattern.match(selector.strip())
+    if match:
+        element = match.group(1)  # e.g., 'a', 'div', or ''
+        id_value = match.group(3)  # e.g., 'legend-link-New Logo'
+        
+        # Check if ID contains a space (invalid CSS)
+        if ' ' in id_value:
+            # Convert to attribute selector
+            if element:
+                return f'{element}[id="{id_value}"]'
+            else:
+                return f'[id="{id_value}"]'
+    
+    return selector
 
 
 class TripleCheckExecutor:
@@ -491,6 +534,8 @@ class TripleCheckExecutor:
                                     await asyncio.sleep(2)
                                 elif action == "click":
                                     selector = nav_step.get("selector", "")
+                                    # Fix selectors with spaces in IDs (e.g., a#legend-link-New Logo)
+                                    selector = fix_selector_with_space_in_id(selector)
                                     console.print(f"[dim]   → click: {selector}[/dim]")
                                     try:
                                         await page.wait_for_selector(selector, timeout=15000)
@@ -544,6 +589,7 @@ class TripleCheckExecutor:
                             persona_result["test_results"] = det_results.get("test_case_results", [])
                             persona_result["success"] = det_results.get("success", False)
                             persona_result["api_calls"] = det_results.get("api_calls", [])
+                            persona_result["api_field_verifications"] = det_results.get("api_field_verifications", [])
                             
                             # Capture API calls
                             det_api_calls = det_results.get("api_calls", [])
@@ -735,24 +781,58 @@ class TripleCheckExecutor:
                 # 2. API Check (Deterministic) - Skip if test_scope says no
                 if test_scope.get("test_api", True):
                     console.print("[bold]2️⃣ API Verification[/bold]")
-                    # Check if any scenario requires API verification with filter
-                    filter_param = None
-                    for scenario in self.mission.get("test_cases", []):
-                        verification_req = scenario.get("verification", {})
-                        if verification_req.get("api") and "filter" in verification_req.get("api", "").lower():
-                            # Try to extract filter parameter from scenario
-                            scenario_id = scenario.get("id", "")
-                            if "filter" in scenario_id:
-                                # Use test_data directly from the scenario
-                                test_data = scenario.get("test_data", {})
-                                filter_param = list(test_data.keys())[0] if test_data else None
-                                break
                     
-                    api_success, api_result = await self.verify_api(page, api_endpoint, filter_param=filter_param)
-                    results["triple_check"]["api"] = {
-                        "success": api_success,
-                        "details": api_result
-                    }
+                    # Check if we have field-level API verifications from deterministic execution
+                    # These are more relevant than checking a generic endpoint
+                    # Gather from both deterministic_execution and persona_results
+                    api_field_verifications = []
+                    
+                    det_exec = results.get("deterministic_execution", {})
+                    if det_exec.get("api_field_verifications"):
+                        api_field_verifications.extend(det_exec.get("api_field_verifications", []))
+                    
+                    # Also check persona results for field verifications
+                    for persona, persona_result in results.get("persona_results", {}).items():
+                        persona_verifications = persona_result.get("api_field_verifications", [])
+                        if persona_verifications:
+                            # Tag with persona
+                            for v in persona_verifications:
+                                v["persona"] = persona
+                            api_field_verifications.extend(persona_verifications)
+                    
+                    if api_field_verifications:
+                        # Use field-level verifications - these verified the actual relevant API data
+                        successful_verifications = [v for v in api_field_verifications if v.get("success")]
+                        api_success = len(successful_verifications) > 0
+                        
+                        fields_verified = [v.get("field") for v in successful_verifications]
+                        console.print(f"[green]   ✅ API fields verified: {', '.join(fields_verified)}[/green]")
+                        
+                        results["triple_check"]["api"] = {
+                            "success": api_success,
+                            "details": {
+                                "method": "field_verification",
+                                "fields_verified": fields_verified,
+                                "verifications": api_field_verifications
+                            }
+                        }
+                    else:
+                        # Fallback: Check for specific endpoint if no field verifications
+                        filter_param = None
+                        for scenario in self.mission.get("test_cases", []):
+                            verification_req = scenario.get("verification", {})
+                            if verification_req.get("api") and "filter" in verification_req.get("api", "").lower():
+                                scenario_id = scenario.get("id", "")
+                                if "filter" in scenario_id:
+                                    test_data = scenario.get("test_data", {})
+                                    filter_param = list(test_data.keys())[0] if test_data else None
+                                    break
+                        
+                        api_success, api_result = await self.verify_api(page, api_endpoint, filter_param=filter_param)
+                        results["triple_check"]["api"] = {
+                            "success": api_success,
+                            "details": api_result
+                        }
                 else:
                     console.print("[bold]2️⃣ API Verification[/bold] [dim](Skipped - not in test scope)[/dim]")
                     results["triple_check"]["api"] = {
@@ -879,6 +959,10 @@ class DeterministicExecutor:
         self.step_results: List[Dict] = []
         self._network_handler_setup = False
         
+        # Track successful API field verifications for Triple-Check summary
+        # Each entry: {"field": str, "api_value": Any, "endpoint": str, "success": bool}
+        self.api_field_verifications: List[Dict] = []
+        
         # Build navigation lookup from semantic graph
         self._node_by_url: Dict[str, Dict] = {}
         self._node_by_id: Dict[str, Dict] = {}
@@ -886,6 +970,10 @@ class DeterministicExecutor:
         
         # Extract context for JIT selector resolution
         self._jit_context = self._build_jit_context()
+        
+        # Initialize selector learner for JIT correction tracking
+        self.selector_learner = SelectorLearner()
+        self._current_node_id = mission.get("target_node", "")
         
         if semantic_graph:
             self._build_navigation_index(semantic_graph)
@@ -1456,6 +1544,8 @@ Rules:
             
             elif action == "click":
                 selector = step.get("selector", "")
+                # Fix selectors with spaces in IDs (e.g., a#legend-link-New Logo)
+                selector = fix_selector_with_space_in_id(selector)
                 description = step.get("description", selector)
                 console.print(f"[dim]   → click: {selector}[/dim]")
                 
@@ -1471,6 +1561,14 @@ Rules:
                             await self.page.wait_for_selector(new_selector, timeout=5000)
                             await self.page.click(new_selector)
                             console.print(f"[green]      ✅ JIT retry succeeded[/green]")
+                            # Record JIT correction for learning
+                            self.selector_learner.record_correction(
+                                original_selector=selector,
+                                corrected_selector=new_selector,
+                                action_type="click",
+                                description=description,
+                                node_id=self._current_node_id
+                            )
                         except Exception as e2:
                             raise e  # Raise original error if JIT fails
                     else:
@@ -1486,6 +1584,8 @@ Rules:
             
             elif action == "fill":
                 selector = step.get("selector", "")
+                # Fix selectors with spaces in IDs
+                selector = fix_selector_with_space_in_id(selector)
                 value = step.get("value", "")
                 description = step.get("description", f"fill {selector}")
                 console.print(f"[dim]   → fill: {selector} = '{value}'[/dim]")
@@ -1502,6 +1602,14 @@ Rules:
                             await self.page.wait_for_selector(new_selector, timeout=5000)
                             await self.page.fill(new_selector, value)
                             console.print(f"[green]      ✅ JIT retry succeeded[/green]")
+                            # Record JIT correction for learning
+                            self.selector_learner.record_correction(
+                                original_selector=selector,
+                                corrected_selector=new_selector,
+                                action_type="fill",
+                                description=description,
+                                node_id=self._current_node_id
+                            )
                         except Exception as e2:
                             raise e
                     else:
@@ -1511,6 +1619,8 @@ Rules:
             
             elif action == "wait_visible":
                 selector = step.get("selector", "")
+                # Fix selectors with spaces in IDs
+                selector = fix_selector_with_space_in_id(selector)
                 timeout = step.get("timeout", 10000)
                 description = step.get("description", f"wait for {selector}")
                 console.print(f"[dim]   → wait_visible: {selector}[/dim]")
@@ -1579,6 +1689,14 @@ Rules:
                                 await self.page.wait_for_selector(new_selector, state="visible", timeout=5000)
                                 console.print(f"[green]      ✅ JIT retry succeeded[/green]")
                                 fallback_found = True
+                                # Record JIT correction for learning
+                                self.selector_learner.record_correction(
+                                    original_selector=selector,
+                                    corrected_selector=new_selector,
+                                    action_type="wait_visible",
+                                    description=description,
+                                    node_id=self._current_node_id
+                                )
                             except Exception as e2:
                                 pass
                     
@@ -1749,6 +1867,8 @@ Rules:
             
             elif action == "assert_visible":
                 selector = step.get("selector", "")
+                # Fix selectors with spaces in IDs
+                selector = fix_selector_with_space_in_id(selector)
                 description = step.get("description", f"assert visible {selector}")
                 console.print(f"[dim]   → assert_visible: {selector}[/dim]")
                 
@@ -1764,6 +1884,14 @@ Rules:
                             element = await self.page.wait_for_selector(new_selector, state="visible", timeout=5000)
                             result["success"] = element is not None
                             console.print(f"[green]      ✅ JIT retry succeeded[/green]")
+                            # Record JIT correction for learning
+                            self.selector_learner.record_correction(
+                                original_selector=selector,
+                                corrected_selector=new_selector,
+                                action_type="assert_visible",
+                                description=description,
+                                node_id=self._current_node_id
+                            )
                         except:
                             result["success"] = False
                     else:
@@ -1791,6 +1919,8 @@ Rules:
             
             elif action == "assert_text":
                 selector = step.get("selector", "")
+                # Fix selectors with spaces in IDs
+                selector = fix_selector_with_space_in_id(selector)
                 expected = step.get("expected", "")
                 description = step.get("description", f"assert text '{expected}' in {selector}")
                 console.print(f"[dim]   → assert_text: {selector} contains '{expected}'[/dim]")
@@ -1806,6 +1936,14 @@ Rules:
                         try:
                             element = await self.page.wait_for_selector(new_selector, timeout=5000)
                             console.print(f"[green]      ✅ JIT retry succeeded[/green]")
+                            # Record JIT correction for learning
+                            self.selector_learner.record_correction(
+                                original_selector=selector,
+                                corrected_selector=new_selector,
+                                action_type="assert_text",
+                                description=description,
+                                node_id=self._current_node_id
+                            )
                         except:
                             pass
 
@@ -1836,8 +1974,8 @@ Rules:
             
             elif action == "verify_api_value_in_ui":
                 # Extract value from API response and verify it's displayed in UI
-                # Strategy: Match first item from API array with first row in table
-                field_name = step.get("field", "")  # e.g., "tcvAmountUplifted"
+                # Generic implementation - works with any field/column combination
+                field_name = step.get("field", "")  # e.g., "accountSegment", "tcvAmountUplifted"
                 ui_selector = step.get("selector", "")  # Where to look in UI
                 endpoint_pattern = step.get("endpoint", "")  # Which API response to check
                 
@@ -1853,7 +1991,7 @@ Rules:
                     
                     body = call.get("body")
                     if body:
-                        # Extract field value (supports nested paths like "data.0.tcvAmountUplifted")
+                        # Extract field value (supports nested paths like "data.0.accountSegment")
                         api_value = self._extract_field_value(body, field_name)
                         if api_value is not None:
                             console.print(f"[dim]      Found {field_name} = {api_value} in API response[/dim]")
@@ -1872,69 +2010,102 @@ Rules:
                     result["error"] = f"Field '{field_name}' not found in captured API responses"
                 else:
                     # Check if the API value appears in the UI
-                    # Strategy: For tables, find the column and check first row's cell
+                    # Use generic strategies that work with any table/column
                     found_in_ui = False
                     matched_text = None
                     
                     try:
-                        # Strategy 1: Try to find value in table structure
-                        # Find TCV column index by looking at headers
-                        column_name = "TCV"  # Default for TCV-related fields
-                        if "tcv" in field_name.lower():
-                            column_name = "TCV"
+                        # Derive column name from multiple sources (generic approach)
+                        column_name = await self._derive_column_name_for_field(field_name, step)
+                        console.print(f"[dim]      Looking for column: '{column_name}'[/dim]")
                         
-                        # Try to find column header and get its index
+                        # Infer field type for appropriate comparison
+                        field_type = await self._infer_field_type(field_name, api_value, column_name)
+                        console.print(f"[dim]      Inferred field type: {field_type}[/dim]")
+                        
+                        # Strategy 1: Try to find value in table structure (generic HTML table)
                         headers = await self.page.query_selector_all("th")
-                        tcv_col_index = -1
+                        header_texts = []
+                        target_col_index = -1
+                        
                         for i, header in enumerate(headers):
                             text = await header.text_content()
-                            if text and column_name.upper() in text.upper():
-                                tcv_col_index = i
-                                console.print(f"[dim]      Found {column_name} column at index {tcv_col_index}[/dim]")
+                            header_text = (text or "").strip()
+                            header_texts.append(header_text)
+                            # Case-insensitive match for column name
+                            if header_text and column_name.lower() in header_text.lower():
+                                target_col_index = i
+                                console.print(f"[dim]      Found '{column_name}' column at index {target_col_index}[/dim]")
                                 break
                         
-                        if tcv_col_index >= 0:
-                            # Get the first data row and check the TCV cell
+                        # If exact match not found, try fuzzy matching with LLM
+                        if target_col_index < 0 and header_texts and self.llm:
+                            target_col_index = await self._llm_find_matching_column(
+                                field_name, column_name, header_texts
+                            )
+                            if target_col_index >= 0:
+                                console.print(f"[dim]      LLM matched '{column_name}' to column index {target_col_index} ('{header_texts[target_col_index]}')[/dim]")
+                        
+                        if target_col_index >= 0:
+                            # Get the first data row and check the target cell
                             first_row_cells = await self.page.query_selector_all("tbody tr:first-child td")
-                            if tcv_col_index < len(first_row_cells):
-                                cell = first_row_cells[tcv_col_index]
+                            if target_col_index < len(first_row_cells):
+                                cell = first_row_cells[target_col_index]
                                 cell_text = await cell.text_content()
-                                console.print(f"[dim]      First row TCV cell text: '{cell_text}'[/dim]")
-                                if cell_text and self._values_match(api_value, cell_text):
+                                cell_text_clean = (cell_text or "").strip()
+                                console.print(f"[dim]      First row cell text: '{cell_text_clean}'[/dim]")
+                                
+                                # Use type-aware comparison
+                                if self._values_match_by_type(api_value, cell_text_clean, field_type):
                                     found_in_ui = True
-                                    matched_text = cell_text.strip()
-                                    console.print(f"[green]      ✅ API value {api_value} matches first row cell '{matched_text}'[/green]")
+                                    matched_text = cell_text_clean
+                                    console.print(f"[green]      ✅ API value '{api_value}' matches cell '{matched_text}'[/green]")
                         
-                        # Strategy 2: Fallback - search in selector area
+                        # Strategy 2: Fallback - search in selector area (if provided)
                         if not found_in_ui and ui_selector:
-                            elements = await self.page.query_selector_all(ui_selector)
-                            for el in elements:
-                                text = await el.text_content()
-                                if text and self._values_match(api_value, text):
-                                    found_in_ui = True
-                                    matched_text = text.strip()
-                                    console.print(f"[green]      ✅ API value {api_value} matches UI text '{matched_text}'[/green]")
-                                    break
+                            try:
+                                elements = await self.page.query_selector_all(ui_selector)
+                                for el in elements:
+                                    text = await el.text_content()
+                                    if text and self._values_match_by_type(api_value, text.strip(), field_type):
+                                        found_in_ui = True
+                                        matched_text = text.strip()
+                                        console.print(f"[green]      ✅ API value '{api_value}' matches selector text '{matched_text}'[/green]")
+                                        break
+                            except Exception:
+                                pass  # Selector may not exist, continue to fallback
                         
-                        # Strategy 3: Fallback - search all table cells
+                        # Strategy 3: Fallback - search all table cells for the value
                         if not found_in_ui:
                             all_cells = await self.page.query_selector_all("table td")
                             for cell in all_cells:
                                 text = await cell.text_content()
-                                if text and self._values_match(api_value, text):
+                                cell_text_clean = (text or "").strip()
+                                if cell_text_clean and self._values_match_by_type(api_value, cell_text_clean, field_type):
                                     found_in_ui = True
-                                    matched_text = text.strip()
-                                    console.print(f"[green]      ✅ API value {api_value} found in table cell '{matched_text}'[/green]")
+                                    matched_text = cell_text_clean
+                                    console.print(f"[green]      ✅ API value '{api_value}' found in table cell '{matched_text}'[/green]")
                                     break
                         
                         result["success"] = found_in_ui
                         result["api_value"] = api_value
                         result["matched_ui_text"] = matched_text
+                        result["column_name"] = column_name
+                        result["field_type"] = field_type
                         
                         if not found_in_ui:
-                            result["error"] = f"API value '{api_value}' not found in UI"
-                            console.print(f"[red]      ❌ API value {api_value} not found in UI[/red]")
+                            result["error"] = f"API value '{api_value}' not found in UI (looked for column '{column_name}')"
+                            console.print(f"[red]      ❌ API value '{api_value}' not found in UI[/red]")
                         else:
+                            # Track successful API field verification for Triple-Check summary
+                            self.api_field_verifications.append({
+                                "field": field_name,
+                                "api_value": api_value,
+                                "endpoint": endpoint_pattern or "captured_response",
+                                "ui_matched": matched_text,
+                                "success": True
+                            })
+                            
                             # If UI check passed, also do DB verification if enabled
                             await self._do_db_verification_if_enabled(
                                 field_name, api_value, result.get("record_id"), result
@@ -2402,7 +2573,8 @@ Rules:
             found_in_ui = False
             
             # Try table-based lookup first (column at index)
-            column_name = "TCV" if "tcv" in api_field.lower() else api_field
+            # Derive column name from API field using generic logic
+            column_name = await self._derive_column_name_for_field(api_field, {})
             console.print(f"[dim]         Looking for column '{column_name}' in table headers...[/dim]")
             
             headers = await self.page.query_selector_all("th")
@@ -2748,6 +2920,211 @@ Rules:
         relative_diff = abs(api_num - ui_num) / abs(api_num)
         return relative_diff <= tolerance
     
+    async def _derive_column_name_for_field(self, field_name: str, step: Dict) -> str:
+        """Derive the UI column name for an API field.
+        
+        Uses multiple strategies in order of preference:
+        1. api_field_mapping from mission/step (most reliable)
+        2. Heuristic conversion from camelCase to Title Case
+        3. LLM inference as fallback
+        
+        Args:
+            field_name: API field name (e.g., "accountSegment")
+            step: The current step definition which may contain mappings
+            
+        Returns:
+            Column name to look for in table headers (e.g., "Account Segment")
+        """
+        # Strategy 1: Check api_field_mapping in step or current test case
+        # The mapping is {"Column Name": "apiFieldName"}, so we need to reverse it
+        test_cases = self.mission.get("test_cases", [])
+        for tc in test_cases:
+            verification = tc.get("verification", {})
+            api_field_mapping = verification.get("api_field_mapping", {})
+            for column_name, api_field in api_field_mapping.items():
+                if api_field == field_name:
+                    return column_name
+        
+        # Also check persona_tests
+        persona_tests = self.mission.get("persona_tests", [])
+        for pt in persona_tests:
+            for tc in pt.get("test_cases", []):
+                verification = tc.get("verification", {})
+                api_field_mapping = verification.get("api_field_mapping", {})
+                for column_name, api_field in api_field_mapping.items():
+                    if api_field == field_name:
+                        return column_name
+        
+        # Strategy 2: Heuristic - convert camelCase to Title Case with spaces
+        # e.g., "accountSegment" -> "Account Segment"
+        # e.g., "tcvAmountUplifted" -> "Tcv Amount Uplifted" (may need further mapping)
+        import re as regex_module
+        # Insert space before each capital letter and title case
+        spaced = regex_module.sub(r'([a-z])([A-Z])', r'\1 \2', field_name)
+        title_case = spaced.title()
+        
+        # Handle common abbreviations (uppercase them)
+        abbreviations = ["Tcv", "Id", "Api", "Ui", "Url"]
+        for abbr in abbreviations:
+            title_case = title_case.replace(abbr, abbr.upper())
+        
+        return title_case
+    
+    async def _infer_field_type(self, field_name: str, sample_value: Any, column_name: str) -> str:
+        """Infer the type of a field for appropriate comparison.
+        
+        Uses heuristics and optionally LLM to determine field type.
+        
+        Args:
+            field_name: API field name
+            sample_value: A sample value from the API
+            column_name: The UI column name
+            
+        Returns:
+            Field type: "currency", "text", "date", "number", "id", "enum"
+        """
+        field_lower = field_name.lower()
+        column_lower = column_name.lower()
+        value_str = str(sample_value) if sample_value is not None else ""
+        
+        # Heuristic 1: Check field/column name patterns
+        currency_patterns = ["amount", "price", "cost", "total", "value", "tcv", "revenue", "incentive"]
+        date_patterns = ["date", "time", "created", "modified", "expiry", "close"]
+        id_patterns = ["id", "_id", "uuid", "guid"]
+        
+        for pattern in currency_patterns:
+            if pattern in field_lower or pattern in column_lower:
+                return "currency"
+        
+        for pattern in date_patterns:
+            if pattern in field_lower or pattern in column_lower:
+                return "date"
+        
+        for pattern in id_patterns:
+            if field_lower.endswith(pattern) or field_lower == pattern:
+                return "id"
+        
+        # Heuristic 2: Check sample value format
+        if sample_value is not None:
+            # Check if it's a number
+            try:
+                float(sample_value)
+                # It's numeric, but is it currency?
+                if any(p in field_lower for p in currency_patterns):
+                    return "currency"
+                return "number"
+            except (ValueError, TypeError):
+                pass
+            
+            # Check if it looks like a date
+            if isinstance(sample_value, str):
+                import re as regex_module
+                date_patterns_regex = [
+                    r'\d{4}-\d{2}-\d{2}',  # ISO date
+                    r'\d{2}/\d{2}/\d{4}',  # US date
+                    r'\d{2} \w{3} \d{4}',  # DD Mon YYYY
+                ]
+                for pattern in date_patterns_regex:
+                    if regex_module.match(pattern, sample_value):
+                        return "date"
+        
+        # Default to text/enum for string values
+        return "text"
+    
+    def _values_match_by_type(self, api_value: Any, ui_text: str, field_type: str, tolerance: float = 0.01) -> bool:
+        """Compare API value with UI text using type-appropriate comparison.
+        
+        Args:
+            api_value: Value from API response
+            ui_text: Text displayed in UI
+            field_type: Type of field ("currency", "text", "number", "date", "id", "enum")
+            tolerance: Tolerance for numeric comparisons
+            
+        Returns:
+            True if values match appropriately for the type
+        """
+        if api_value is None or ui_text is None:
+            return False
+        
+        api_str = str(api_value).strip()
+        ui_str = ui_text.strip()
+        
+        if field_type in ("currency", "number"):
+            # Use existing numeric comparison with tolerance
+            return self._values_match(api_value, ui_text, tolerance)
+        
+        elif field_type == "date":
+            # Normalize dates for comparison
+            # Remove time component if present, compare date part
+            api_date = api_str.split("T")[0] if "T" in api_str else api_str
+            # Try to find the date in the UI text
+            return api_date in ui_str or ui_str in api_date
+        
+        elif field_type == "id":
+            # Exact match for IDs
+            return api_str == ui_str
+        
+        else:
+            # Text/enum: case-insensitive exact match or containment
+            # Exact match first
+            if api_str.lower() == ui_str.lower():
+                return True
+            # Containment (API value appears in UI text)
+            if api_str.lower() in ui_str.lower():
+                return True
+            # UI text appears in API value (for truncated display)
+            if ui_str.lower() in api_str.lower() and len(ui_str) > 3:
+                return True
+            return False
+    
+    async def _llm_find_matching_column(self, field_name: str, expected_column: str, header_texts: List[str]) -> int:
+        """Use LLM to find the best matching column for a field.
+        
+        Args:
+            field_name: API field name
+            expected_column: The column name we're looking for
+            header_texts: List of actual table header texts
+            
+        Returns:
+            Index of the matching column, or -1 if not found
+        """
+        if not self.llm or not header_texts:
+            return -1
+        
+        try:
+            prompt = f"""You are helping match an API field to a table column header.
+
+API Field Name: {field_name}
+Expected Column Name: {expected_column}
+
+Available Table Headers:
+{chr(10).join(f'{i}: "{h}"' for i, h in enumerate(header_texts) if h)}
+
+Which header index (0-based) best matches the API field "{field_name}"?
+Consider that:
+- "accountSegment" would match "Account Segment" 
+- "tcvAmountUplifted" would match "TCV"
+- API fields use camelCase, UI headers use Title Case or abbreviations
+
+Return ONLY the index number (e.g., "3") or "-1" if no match found.
+"""
+            response = self.llm.invoke(prompt)
+            content = response.content if hasattr(response, 'content') else str(response)
+            content = content.strip()
+            
+            # Extract the number from response
+            import re as regex_module
+            match = regex_module.search(r'-?\d+', content)
+            if match:
+                idx = int(match.group())
+                if 0 <= idx < len(header_texts):
+                    return idx
+            return -1
+            
+        except Exception as e:
+            console.print(f"[yellow]      ⚠️ LLM column matching failed: {e}[/yellow]")
+            return -1
+    
     async def execute_test_case(self, test_case_def: Dict) -> Dict:
         """Execute all steps for a test case.
         
@@ -2838,11 +3215,26 @@ Rules:
         
         results["api_calls"] = self.api_calls
         
+        # Include API field verifications for Triple-Check summary
+        results["api_field_verifications"] = self.api_field_verifications
+        if self.api_field_verifications:
+            console.print(f"[cyan]   📊 {len(self.api_field_verifications)} API field verification(s) passed[/cyan]")
+        
+        # Include JIT corrections in results
+        jit_corrections = self.selector_learner.get_corrections()
+        if jit_corrections:
+            results["jit_corrections"] = jit_corrections
+            console.print(f"[cyan]   📝 {len(jit_corrections)} JIT selector correction(s) recorded[/cyan]")
+        
         console.print()
         success_icon = "✅" if results["success"] else "❌"
         console.print(f"[bold]{success_icon} Deterministic Execution: {'PASS' if results['success'] else 'FAIL'}[/bold]")
         
         return results
+    
+    def get_selector_learner(self) -> SelectorLearner:
+        """Get the selector learner for applying corrections."""
+        return self.selector_learner
 
 
 async def main():
@@ -2877,6 +3269,37 @@ async def main():
         # Execute
         executor = TripleCheckExecutor(args.mission_file, llm=llm)
         results = await executor.execute()
+        
+        # Apply JIT corrections if any were recorded
+        mission_path = Path(args.mission_file)
+        if mission_path.is_absolute():
+            full_mission_path = mission_path
+        else:
+            full_mission_path = Path(__file__).parent / mission_path
+        
+        # Collect JIT corrections from results
+        jit_corrections = results.get("deterministic_execution", {}).get("jit_corrections", [])
+        if jit_corrections:
+            console.print(f"\n[cyan]📝 Applying {len(jit_corrections)} JIT selector correction(s)...[/cyan]")
+            learner = SelectorLearner()
+            for corr in jit_corrections:
+                learner.record_correction(
+                    original_selector=corr.get("original_selector", ""),
+                    corrected_selector=corr.get("corrected_selector", ""),
+                    action_type=corr.get("action_type", ""),
+                    description=corr.get("description", ""),
+                    node_id=corr.get("node_id", "")
+                )
+            
+            # Apply corrections to mission file and semantic graph
+            apply_result = learner.apply_all(full_mission_path)
+            if apply_result.get("mission_updated"):
+                console.print("[green]   ✅ Mission file updated with corrected selectors[/green]")
+            if apply_result.get("graph_updated"):
+                console.print("[green]   ✅ Semantic graph updated with corrected selectors[/green]")
+            
+            # Add correction info to results
+            results["jit_corrections_applied"] = apply_result
         
         # Save report
         report_path = Path(__file__).parent / "temp" / f"{Path(args.mission_file).stem}_report.json"
